@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState, type ChangeEvent, type FormEvent } from "react";
+import { apiFetch } from "@/lib/api/client";
 import { DEFAULT_CATEGORIES, sortCategories } from "@/lib/menu-categories";
 
 export interface MenuFormValues {
@@ -9,6 +10,7 @@ export interface MenuFormValues {
   category: string;
   price: number;
   is_available: boolean;
+  image_url: string | null;
 }
 
 interface Props {
@@ -41,7 +43,37 @@ export default function MenuFormDialog({
   );
   const [newCategory, setNewCategory] = useState("");
   const [price, setPrice] = useState(String(initial?.price ?? 0));
-  const [isAvailable, setIsAvailable] = useState(initial?.is_available ?? true);
+    const [isAvailable, setIsAvailable] = useState(initial?.is_available ?? true);
+  const [imageUrl, setImageUrl] = useState<string | null>(initial?.image_url ?? null);
+  const [uploading, setUploading] = useState(false);
+
+  async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // lets you pick the same file again later
+    if (!file) return;
+
+    setError(null);
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("Please choose a JPEG, PNG or WebP image.");
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      setError("The image must be 4 MB or smaller.");
+      return;
+    }
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await apiFetch<{ publicUrl: string }>("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+    setUploading(false);
+
+    if (res.success && res.data) setImageUrl(res.data.publicUrl);
+    else setError(res.error ?? "Image upload failed.");
+  }
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -68,6 +100,7 @@ export default function MenuFormDialog({
       category,
       price: priceNumber,
       is_available: isAvailable,
+      image_url: imageUrl,
     });
     setSaving(false);
 
@@ -155,6 +188,37 @@ export default function MenuFormDialog({
           />
         </div>
 
+                <div className="space-y-2">
+          <p className="text-sm font-medium text-neutral-700">
+            Photo <span className="font-normal text-neutral-500">(optional, JPEG/PNG/WebP, up to 4 MB)</span>
+          </p>
+          {imageUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={imageUrl}
+              alt="Menu item preview"
+              className="h-32 w-full rounded-md object-cover"
+            />
+          )}
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleFileChange}
+            disabled={uploading || saving}
+            className="block w-full text-sm text-neutral-700"
+          />
+          {uploading && <p className="text-xs text-neutral-500">Uploading...</p>}
+          {imageUrl && !uploading && (
+            <button
+              type="button"
+              onClick={() => setImageUrl(null)}
+              className="text-xs text-red-600 underline"
+            >
+              Remove photo
+            </button>
+          )}
+        </div>
+
         <label className="flex items-center gap-2 text-sm text-neutral-700">
           <input
             type="checkbox"
@@ -177,7 +241,7 @@ export default function MenuFormDialog({
           </button>
           <button
             type="submit"
-            disabled={saving}
+            disabled={saving || uploading}
             className="rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-60"
           >
             {saving ? "Saving..." : submitLabel}
