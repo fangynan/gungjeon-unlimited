@@ -119,6 +119,16 @@ export default function MenuManagementPage() {
           ))}
         </div>
       )}
+
+      {showAdd && (
+        <MenuFormDialog
+          title="Add Menu Item"
+          submitLabel="Add Item"
+          existingCategories={categories}
+          onClose={() => setShowAdd(false)}
+          onSubmit={addItem}
+        />
+      )}
     </main>
   );
 }
