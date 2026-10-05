@@ -74,6 +74,16 @@ export interface CreateBatchInput {
   expiration_date: string;
 }
 
+/** PATCH /api/inventory/batches/[id] (admin). Send only the fields you want to change. */
+export interface UpdateBatchInput {
+  /** New total quantity (>= 0). Setting 0 marks the batch depleted. */
+  quantity?: number;
+  /** `YYYY-MM-DD`, not in the future, not after the expiration date. */
+  received_date?: string;
+  /** `YYYY-MM-DD`. A past date marks the batch expired. */
+  expiration_date?: string;
+}
+
 /** PATCH /api/inventory/batches/[id]/deduct (admin or staff) */
 export interface DeductBatchInput {
   /** Amount to remove; must be > 0 and no more than the batch holds. */

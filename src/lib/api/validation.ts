@@ -146,6 +146,15 @@ export const deductBatchSchema = z.object({
   quantity: z.number().gt(0, "quantity must be greater than 0").max(MAX_QUANTITY),
 });
 
+export const updateBatchSchema = z
+  .object({
+    quantity: z.number().min(0, "quantity must be >= 0").max(MAX_QUANTITY),
+    received_date: isoDate,
+    expiration_date: isoDate,
+  })
+  .partial()
+  .refine(atLeastOneField, AT_LEAST_ONE);
+
 export const fefoQuerySchema = z.object({
   ingredient_id: uuidField.optional(),
   /** Defaults to `active`: the batches staff should be drawing from. */

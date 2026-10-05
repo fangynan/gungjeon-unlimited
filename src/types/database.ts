@@ -87,6 +87,8 @@ export interface InventoryBatch {
   quantity: number;
   /** Calendar date, `YYYY-MM-DD`. The batch is usable through this day and expired after it. */
   expiration_date: string;
+  /** Calendar date the batch was received, `YYYY-MM-DD` (restaurant time). */
+  received_date: string;
   status: BatchStatus;
   created_at: string; // ISO 8601
 }
