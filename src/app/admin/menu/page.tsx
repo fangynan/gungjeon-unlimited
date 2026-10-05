@@ -118,7 +118,7 @@ export default function MenuManagementPage() {
             </div>
           ))}
         </div>
-      )}
+            )}
 
       {showAdd && (
         <MenuFormDialog
