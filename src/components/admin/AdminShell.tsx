@@ -52,7 +52,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   const isAdmin = profile?.role === "admin";
 
   return (
-    <div className="flex min-h-screen bg-white">
+    <div className="flex min-h-screen bg-white text-neutral-900">
       <aside className="flex w-64 shrink-0 flex-col border-r border-neutral-300 bg-neutral-200">
         <div className="border-b border-neutral-300 p-4">
           <p className="text-lg font-bold leading-tight text-neutral-900">

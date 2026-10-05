@@ -2,7 +2,18 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api/client";
-import type { FefoBatch, IngredientWithStock } from "@/types";
+import DeductDialog from "@/components/admin/DeductDialog";
+import AddInventoryDialog, {
+  type BatchFormValues,
+  type NewIngredientValues,
+} from "@/components/admin/AddInventoryDialog";
+import type {
+  FefoBatch,
+  Ingredient,
+  IngredientWithStock,
+  InventoryBatch,
+  UserProfile,
+} from "@/types";
 
 // A batch with this many days (or fewer) left is "Near Expiry".
 const NEAR_EXPIRY_DAYS = 3;
@@ -54,6 +65,9 @@ export default function InventoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | DisplayStatus>("all");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdd, setShowAdd] = useState(false);
+  const [deducting, setDeducting] = useState<FefoBatch | null>(null);
 
   const load = useCallback(async () => {
     const [fefoRes, ingredientsRes] = await Promise.all([
@@ -74,6 +88,47 @@ export default function InventoryPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    apiFetch<UserProfile>("/api/auth/me").then((res) => {
+      if (res.success && res.data) setIsAdmin(res.data.role === "admin");
+    });
+  }, []);
+
+  async function createIngredient(
+    values: NewIngredientValues
+  ): Promise<{ id: string | null; error: string | null }> {
+    const res = await apiFetch<Ingredient>("/api/inventory/ingredients", {
+      method: "POST",
+      json: values,
+    });
+    if (!res.success || !res.data) {
+      return { id: null, error: res.error ?? "Could not create the ingredient." };
+    }
+    await load(); // so the new ingredient appears in the dropdown
+    return { id: res.data.id, error: null };
+  }
+
+  async function addBatch(values: BatchFormValues): Promise<string | null> {
+    const res = await apiFetch<InventoryBatch>("/api/inventory/batches", {
+      method: "POST",
+      json: values,
+    });
+    if (!res.success) return res.error ?? "Could not add the batch.";
+    await load();
+    return null;
+  }
+
+    async function deductBatch(quantity: number): Promise<string | null> {
+    if (!deducting) return "No batch selected.";
+    const res = await apiFetch<InventoryBatch>(
+      `/api/inventory/batches/${deducting.id}/deduct`,
+      { method: "PATCH", json: { quantity } }
+    );
+    if (!res.success) return res.error ?? "Could not deduct the quantity.";
+    await load();
+    return null;
+  }
 
   const lowStockIds = useMemo(
     () => new Set(ingredients.filter((i) => i.is_low_stock).map((i) => i.id)),
@@ -97,11 +152,19 @@ export default function InventoryPage() {
 
   return (
     <main className="space-y-4 p-8">
-      <div>
-        <h1 className="text-3xl font-bold text-neutral-900">Inventory</h1>
-        <p className="text-neutral-700">
-          Ingredient batches, FEFO order, and expiration monitoring in one place.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-neutral-900">Inventory</h1>
+          <p className="text-neutral-700">
+            Ingredient batches, FEFO order, and expiration monitoring in one place.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowAdd(true)}
+          className="rounded-md border border-neutral-400 px-4 py-2 text-sm font-semibold hover:bg-neutral-100"
+        >
+          + Add Inventory
+        </button>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -148,6 +211,7 @@ export default function InventoryPage() {
                 <th className="p-3">Date Received</th>
                 <th className="p-3">Expiration Date</th>
                 <th className="p-3">Status</th>
+                <th className="p-3">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -172,14 +236,42 @@ export default function InventoryPage() {
                   <td className="p-3">{formatExpiration(batch.expiration_date)}</td>
                   <td className="p-3">
                     <span className={`rounded px-2 py-1 text-xs font-semibold ${BADGE[status]}`}>
-                      {status}
+                                            {status}
                     </span>
+                  </td>
+                  <td className="p-3">
+                    {status !== "Expired" && status !== "Depleted" ? (
+                      <button
+                        onClick={() => setDeducting(batch)}
+                        className="rounded-md border border-neutral-400 px-3 py-1 text-xs font-semibold hover:bg-neutral-100"
+                      >
+                        Deduct
+                      </button>
+                    ) : (
+                      <span className="text-neutral-400">—</span>
+                    )}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+          {showAdd && (
+        <AddInventoryDialog
+          ingredients={ingredients}
+          canCreateIngredient={isAdmin}
+          onClose={() => setShowAdd(false)}
+          onCreateIngredient={createIngredient}
+          onSubmit={addBatch}
+        />
+      )}
+          {deducting && (
+        <DeductDialog
+          batch={deducting}
+          onClose={() => setDeducting(null)}
+          onSubmit={deductBatch}
+        />
       )}
     </main>
   );
