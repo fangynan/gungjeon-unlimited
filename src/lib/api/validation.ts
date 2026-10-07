@@ -135,6 +135,14 @@ export const createIngredientSchema = z.object({
   minimum_threshold: z.number().min(0, "minimum_threshold must be >= 0").max(MAX_QUANTITY).optional(),
 });
 
+export const updateIngredientSchema = z
+  .object({
+    name: z.string().trim().min(1, "name is required").max(120),
+    minimum_threshold: z.number().min(0, "minimum_threshold must be >= 0").max(MAX_QUANTITY),
+  })
+  .partial()
+  .refine(atLeastOneField, AT_LEAST_ONE);
+
 export const createBatchSchema = z.object({
   ingredient_id: uuidField,
   batch_number: z.string().trim().min(1, "batch_number is required").max(60),

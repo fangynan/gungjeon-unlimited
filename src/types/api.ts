@@ -74,6 +74,13 @@ export interface CreateBatchInput {
   expiration_date: string;
 }
 
+/** PATCH /api/inventory/ingredients/[id] (admin). Send only the fields you want to change. */
+export interface UpdateIngredientInput {
+  name?: string;
+  /** Low-stock warning level; 0 turns the warning off. */
+  minimum_threshold?: number;
+}
+
 /** PATCH /api/inventory/batches/[id] (admin). Send only the fields you want to change. */
 export interface UpdateBatchInput {
   /** New total quantity (>= 0). Setting 0 marks the batch depleted. */

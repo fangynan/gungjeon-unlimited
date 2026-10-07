@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api/client";
-import DeductDialog from "@/components/admin/DeductDialog";
 import AddInventoryDialog, {
   type BatchFormValues,
   type NewIngredientValues,
 } from "@/components/admin/AddInventoryDialog";
+import DeductDialog from "@/components/admin/DeductDialog";
+import EditBatchDialog, { type EditBatchValues } from "@/components/admin/EditBatchDialog";
 import type {
   FefoBatch,
   Ingredient,
@@ -39,19 +40,9 @@ function getStatus(batch: FefoBatch, lowStockIds: Set<string>): DisplayStatus {
 }
 
 // "2026-10-13" -> "Oct 13, 2026" (no timezone shifting)
-function formatExpiration(date: string): string {
+function formatDate(date: string): string {
   return new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
     timeZone: "UTC",
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-// ISO timestamp -> "Oct 5, 2026" in restaurant time
-function formatReceived(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
-    timeZone: "Asia/Manila",
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -68,6 +59,7 @@ export default function InventoryPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [deducting, setDeducting] = useState<FefoBatch | null>(null);
+  const [editing, setEditing] = useState<FefoBatch | null>(null);
 
   const load = useCallback(async () => {
     const [fefoRes, ingredientsRes] = await Promise.all([
@@ -119,13 +111,48 @@ export default function InventoryPage() {
     return null;
   }
 
-    async function deductBatch(quantity: number): Promise<string | null> {
+  async function deductBatch(quantity: number): Promise<string | null> {
     if (!deducting) return "No batch selected.";
     const res = await apiFetch<InventoryBatch>(
       `/api/inventory/batches/${deducting.id}/deduct`,
       { method: "PATCH", json: { quantity } }
     );
     if (!res.success) return res.error ?? "Could not deduct the quantity.";
+    await load();
+    return null;
+  }
+
+  async function editBatch(values: EditBatchValues): Promise<string | null> {
+    if (!editing) return "No batch selected.";
+
+    // Only send what actually changed.
+    const batchChanges: { quantity?: number; received_date?: string; expiration_date?: string } = {};
+    if (values.quantity !== editing.quantity) batchChanges.quantity = values.quantity;
+    if (values.received_date !== editing.received_date) batchChanges.received_date = values.received_date;
+    if (values.expiration_date !== editing.expiration_date) {
+      batchChanges.expiration_date = values.expiration_date;
+    }
+    const nameChanged = values.name !== editing.ingredient.name;
+
+    if (Object.keys(batchChanges).length > 0) {
+      const res = await apiFetch<InventoryBatch>(`/api/inventory/batches/${editing.id}`, {
+        method: "PATCH",
+        json: batchChanges,
+      });
+      if (!res.success) return res.error ?? "Could not update the batch.";
+    }
+
+    if (nameChanged) {
+      const res = await apiFetch<Ingredient>(`/api/inventory/ingredients/${editing.ingredient_id}`, {
+        method: "PATCH",
+        json: { name: values.name },
+      });
+      if (!res.success) {
+        await load();
+        return `The batch was saved, but the name could not be changed: ${res.error ?? "unknown error"}`;
+      }
+    }
+
     await load();
     return null;
   }
@@ -215,49 +242,62 @@ export default function InventoryPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.map(({ batch, status }) => (
-                <tr
-                  key={batch.id}
-                  className={`border-t border-neutral-200 ${batch.use_first ? "bg-red-50" : ""}`}
-                >
-                  <td className="p-3 font-medium text-neutral-900">
-                    {batch.ingredient.name}
-                    {batch.use_first && (
-                      <span className="ml-2 rounded bg-red-700 px-2 py-0.5 text-xs font-semibold text-white">
-                        Use first
+              {rows.map(({ batch, status }) => {
+                const canDeduct = status !== "Expired" && status !== "Depleted";
+                return (
+                  <tr
+                    key={batch.id}
+                    className={`border-t border-neutral-200 ${batch.use_first ? "bg-red-50" : ""}`}
+                  >
+                    <td className="p-3 font-medium text-neutral-900">
+                      {batch.ingredient.name}
+                      {batch.use_first && (
+                        <span className="ml-2 rounded bg-red-700 px-2 py-0.5 text-xs font-semibold text-white">
+                          Use first
+                        </span>
+                      )}
+                    </td>
+                    <td className="p-3">{batch.batch_number}</td>
+                    <td className="p-3">
+                      {batch.quantity} {batch.ingredient.unit}
+                    </td>
+                    <td className="p-3">{formatDate(batch.received_date)}</td>
+                    <td className="p-3">{formatDate(batch.expiration_date)}</td>
+                    <td className="p-3">
+                      <span className={`rounded px-2 py-1 text-xs font-semibold ${BADGE[status]}`}>
+                        {status}
                       </span>
-                    )}
-                  </td>
-                  <td className="p-3">{batch.batch_number}</td>
-                  <td className="p-3">
-                    {batch.quantity} {batch.ingredient.unit}
-                  </td>
-                  <td className="p-3">{formatReceived(batch.created_at)}</td>
-                  <td className="p-3">{formatExpiration(batch.expiration_date)}</td>
-                  <td className="p-3">
-                    <span className={`rounded px-2 py-1 text-xs font-semibold ${BADGE[status]}`}>
-                                            {status}
-                    </span>
-                  </td>
-                  <td className="p-3">
-                    {status !== "Expired" && status !== "Depleted" ? (
-                      <button
-                        onClick={() => setDeducting(batch)}
-                        className="rounded-md border border-neutral-400 px-3 py-1 text-xs font-semibold hover:bg-neutral-100"
-                      >
-                        Deduct
-                      </button>
-                    ) : (
-                      <span className="text-neutral-400">—</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="p-3">
+                      <div className="flex gap-2">
+                        {canDeduct && (
+                          <button
+                            onClick={() => setDeducting(batch)}
+                            className="rounded-md border border-neutral-400 px-3 py-1 text-xs font-semibold hover:bg-neutral-100"
+                          >
+                            Deduct
+                          </button>
+                        )}
+                        {isAdmin && (
+                          <button
+                            onClick={() => setEditing(batch)}
+                            className="rounded-md border border-neutral-400 px-3 py-1 text-xs font-semibold hover:bg-neutral-100"
+                          >
+                            Edit
+                          </button>
+                        )}
+                        {!canDeduct && !isAdmin && <span className="text-neutral-400">—</span>}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
-          {showAdd && (
+
+      {showAdd && (
         <AddInventoryDialog
           ingredients={ingredients}
           canCreateIngredient={isAdmin}
@@ -266,11 +306,18 @@ export default function InventoryPage() {
           onSubmit={addBatch}
         />
       )}
-          {deducting && (
+      {deducting && (
         <DeductDialog
           batch={deducting}
           onClose={() => setDeducting(null)}
           onSubmit={deductBatch}
+        />
+      )}
+      {editing && (
+        <EditBatchDialog
+          batch={editing}
+          onClose={() => setEditing(null)}
+          onSubmit={editBatch}
         />
       )}
     </main>
