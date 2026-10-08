@@ -102,6 +102,22 @@ export interface FefoBatch extends InventoryBatch {
   use_first: boolean;
 }
 
+/** public.inventory_logs: one row per stock change (added / used / adjusted). */
+export interface InventoryLog {
+  id: string;
+  batch_id: string | null;
+  /** Copied at the time of the change, so the history still reads well if things are renamed later. */
+  ingredient_name: string;
+  batch_number: string;
+  unit: string;
+  change_type: "added" | "used" | "adjusted";
+  /** Positive = stock went up, negative = stock went down. */
+  quantity_changed: number;
+  user_id: string | null;
+  user_name: string | null;
+  created_at: string; // ISO 8601
+}
+
 /** public.side_dish_requests */
 export interface SideDishRequest {
   id: string;

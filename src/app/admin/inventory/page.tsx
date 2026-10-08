@@ -2,17 +2,20 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api/client";
+import { supabaseBrowser } from "@/lib/supabase/browser";
 import AddInventoryDialog, {
   type BatchFormValues,
   type NewIngredientValues,
 } from "@/components/admin/AddInventoryDialog";
 import DeductDialog from "@/components/admin/DeductDialog";
 import EditBatchDialog, { type EditBatchValues } from "@/components/admin/EditBatchDialog";
+import InventoryActivityLog from "@/components/admin/InventoryActivityLog";
 import type {
   FefoBatch,
   Ingredient,
   IngredientWithStock,
   InventoryBatch,
+  InventoryLog,
   UserProfile,
 } from "@/types";
 
@@ -60,11 +63,14 @@ export default function InventoryPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [deducting, setDeducting] = useState<FefoBatch | null>(null);
   const [editing, setEditing] = useState<FefoBatch | null>(null);
+  const [logs, setLogs] = useState<InventoryLog[]>([]);
+  const [logError, setLogError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const [fefoRes, ingredientsRes] = await Promise.all([
+    const [fefoRes, ingredientsRes, logsRes] = await Promise.all([
       apiFetch<FefoBatch[]>("/api/inventory/fefo?status=all"),
       apiFetch<IngredientWithStock[]>("/api/inventory/ingredients"),
+      apiFetch<InventoryLog[]>("/api/inventory/logs"),
     ]);
 
     if (fefoRes.success && fefoRes.data && ingredientsRes.success && ingredientsRes.data) {
@@ -74,11 +80,55 @@ export default function InventoryPage() {
     } else {
       setError(fefoRes.error ?? ingredientsRes.error ?? "Could not load inventory.");
     }
+        if (logsRes.success && logsRes.data) {
+      setLogs(logsRes.data);
+      setLogError(null);
+    } else {
+      setLogError(logsRes.error ?? "Could not load the activity history.");
+    }
     setLoading(false);
   }, []);
 
   useEffect(() => {
     load();
+  }, [load]);
+
+  // Live updates: when anyone changes the inventory, reload the lists.
+  useEffect(() => {
+    const supabase = supabaseBrowser();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+
+    // One action can cause several database changes at once, so wait a moment and reload only once.
+    function reloadSoon() {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        load();
+      }, 400);
+    }
+
+    async function start() {
+      // The inventory tables are private, so the live connection must know who we are
+      // before it subscribes. Otherwise the database sends us nothing.
+      const { data } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (data.session) supabase.realtime.setAuth(data.session.access_token);
+
+      channel = supabase
+        .channel("inventory-live")
+        .on("postgres_changes", { event: "*", schema: "public", table: "inventory_batches" }, reloadSoon)
+        .on("postgres_changes", { event: "*", schema: "public", table: "ingredients" }, reloadSoon)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table: "inventory_logs" }, reloadSoon)
+        .subscribe();
+    }
+    start();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      if (channel) supabase.removeChannel(channel);
+    };
   }, [load]);
 
   useEffect(() => {
@@ -296,6 +346,8 @@ export default function InventoryPage() {
           </table>
         </div>
       )}
+
+            {!loading && <InventoryActivityLog logs={logs} error={logError} />}
 
       {showAdd && (
         <AddInventoryDialog

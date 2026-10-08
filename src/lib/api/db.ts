@@ -5,7 +5,9 @@ export const MENU_ITEM_COLUMNS =
 export const TABLE_COLUMNS = "id, table_number, capacity, location, status, created_at, updated_at";
 export const INGREDIENT_COLUMNS = "id, name, unit, minimum_threshold, created_at";
 export const BATCH_COLUMNS =
-  "id, ingredient_id, batch_number, quantity, expiration_date, received_date, status, created_at";
+    "id, ingredient_id, batch_number, quantity, expiration_date, received_date, status, created_at";
+export const LOG_COLUMNS =
+  "id, batch_id, ingredient_name, batch_number, unit, change_type, quantity_changed, user_id, user_name, created_at";
 
 /** Supabase's untyped client returns loosely typed rows; this makes the intent explicit. */
 export function cast<T>(value: unknown): T {
