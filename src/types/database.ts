@@ -136,3 +136,14 @@ export interface SideDishAnalyticsItem {
   views_count: number;
   last_requested_at: string | null; // ISO 8601, within the period
 }
+
+
+/** GET /api/side-dishes/recent row: a recorded request with the dish name and table number. */
+export interface SideDishRequestDetail {
+  id: string;
+  menu_item_id: string;
+  name: string;
+  table_id: string | null;
+  table_number: string | null;
+  requested_at: string; // ISO 8601
+}
