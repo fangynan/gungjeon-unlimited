@@ -1,6 +1,7 @@
 // src/app/(public)/page.tsx
 import Link from "next/link";
 import type { Metadata } from "next";
+import type React from "react";
 
 export const metadata: Metadata = {
   title: "Gungjeon Unlimited — Eat All You Can",
@@ -32,6 +33,24 @@ const MARQUEE_ITEMS: readonly string[] = [
   "No Limits",
 ] as const;
 
+const FLAMES: readonly { h: number; delay: string; dur: string }[] = Array.from(
+  { length: 22 },
+  (_, i) => ({
+    h: 38 + ((i * 37) % 52),
+    delay: `-${((i * 0.37) % 2.4).toFixed(2)}s`,
+    dur: `${(1.1 + ((i * 13) % 7) / 10).toFixed(2)}s`,
+  })
+);
+
+const EMBERS: readonly { left: string; delay: string; dur: string; sway: string; amber: boolean }[] =
+  Array.from({ length: 16 }, (_, i) => ({
+    left: `${(i * 53) % 100}%`,
+    delay: `-${((i * 0.71) % 5).toFixed(2)}s`,
+    dur: `${(3.8 + ((i * 7) % 5) * 0.6).toFixed(2)}s`,
+    sway: `${((i % 2 === 0 ? 1 : -1) * (12 + ((i * 11) % 36))).toString()}px`,
+    amber: i % 3 !== 0,
+  }));
+
 /* ───────────── Background Keyframes (scoped to hero) ───────────── */
 const HERO_FX = `
   @keyframes gj-grid-drift {
@@ -46,11 +65,20 @@ const HERO_FX = `
     0%, 100% { opacity: 0.2; transform: translate3d(0, 0, 0) scale(1); }
     50%      { opacity: 0.5; transform: translate3d(-5%, 4%, 0) scale(1.18); }
   }
-  @keyframes gj-scan {
-    0%   { transform: translateY(-10vh); opacity: 0; }
+  @keyframes gj-flame {
+    0%, 100% { transform: scaleY(0.72) skewX(-4deg); opacity: 0.8; }
+    25%      { transform: scaleY(1.05) skewX(5deg);  opacity: 1; }
+    50%      { transform: scaleY(0.86) skewX(-2deg); opacity: 0.85; }
+    75%      { transform: scaleY(1.16) skewX(3deg);  opacity: 1; }
+  }
+  @keyframes gj-heat {
+    0%, 100% { opacity: 0.55; }
+    50%      { opacity: 0.95; }
+  }
+  @keyframes gj-ember {
+    0%   { transform: translate3d(0, 0, 0); opacity: 0; }
     10%  { opacity: 1; }
-    90%  { opacity: 1; }
-    100% { transform: translateY(110vh); opacity: 0; }
+    100% { transform: translate3d(var(--sway), -75vh, 0); opacity: 0; }
   }
   @keyframes gj-marquee {
     from { transform: translateX(0); }
@@ -67,13 +95,16 @@ const HERO_FX = `
   .gj-grid    { animation: gj-grid-drift 6s linear infinite; }
   .gj-glow-a  { animation: gj-glow-pulse 7s cubic-bezier(0.25, 1, 0.5, 1) infinite; }
   .gj-glow-b  { animation: gj-glow-pulse-alt 9s cubic-bezier(0.25, 1, 0.5, 1) infinite; }
-  .gj-scan    { animation: gj-scan 5.5s cubic-bezier(0.25, 1, 0.5, 1) infinite; }
+  .gj-flame   { transform-origin: 50% 100%; animation: gj-flame var(--dur) cubic-bezier(0.25, 1, 0.5, 1) var(--delay) infinite; will-change: transform, opacity; }
+  .gj-heat    { animation: gj-heat 2.2s cubic-bezier(0.25, 1, 0.5, 1) infinite; }
+  .gj-ember   { animation: gj-ember var(--dur) cubic-bezier(0.25, 1, 0.5, 1) var(--delay) infinite; will-change: transform, opacity; }
   .gj-marquee { animation: gj-marquee 28s linear infinite; }
   .gj-flicker { animation: gj-flicker 4s steps(1, end) infinite; }
   @media (prefers-reduced-motion: reduce) {
-    .gj-grid, .gj-glow-a, .gj-glow-b, .gj-scan, .gj-marquee, .gj-flicker {
+    .gj-grid, .gj-glow-a, .gj-glow-b, .gj-flame, .gj-heat, .gj-ember, .gj-marquee, .gj-flicker {
       animation: none !important;
     }
+    .gj-ember { opacity: 0; }
   }
 `;
 
@@ -120,13 +151,65 @@ export default function PublicHomePage() {
               "radial-gradient(closest-side, rgba(236,201,75,0.35), rgba(236,201,75,0) 100%)",
           }}
         />
-
-        {/* Scanline sweep */}
+        {/* Grill fire — heat glow, flame tongues, embers */}
         <div
           aria-hidden
-          className="gj-scan pointer-events-none absolute inset-x-0 top-0 h-px rounded-none bg-red-600"
-          style={{ boxShadow: "0 0 24px 4px rgba(229,62,62,0.6)" }}
-        />
+          className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-[48vh] overflow-hidden rounded-none"
+        >
+          {/* Heat bed */}
+          <div
+            className="gj-heat absolute inset-x-0 bottom-0 h-full rounded-none"
+            style={{
+              background:
+                "linear-gradient(to top, rgba(236,201,75,0.35) 0%, rgba(229,62,62,0.28) 30%, rgba(229,62,62,0) 100%)",
+            }}
+          />
+
+          {/* Flame tongues */}
+          <div
+            className="absolute inset-x-0 bottom-10 flex h-[85%] items-end px-2 mix-blend-screen"
+            style={{
+              WebkitMaskImage: "linear-gradient(to top, #000 55%, transparent 100%)",
+              maskImage: "linear-gradient(to top, #000 55%, transparent 100%)",
+            }}
+          >
+            {FLAMES.map((f, i) => (
+              <span
+                key={i}
+                className="gj-flame -mx-[1.2%] block flex-1 rounded-none"
+                style={
+                  {
+                    height: `${f.h}%`,
+                    "--dur": f.dur,
+                    "--delay": f.delay,
+                    clipPath:
+                      "polygon(50% 0%, 78% 38%, 100% 100%, 0% 100%, 22% 38%)",
+                    background:
+                      "linear-gradient(to top, #ECC94B 0%, #E53E3E 55%, rgba(229,62,62,0) 100%)",
+                  } as React.CSSProperties
+                }
+              />
+            ))}
+          </div>
+
+          {/* Embers */}
+          {EMBERS.map((e, i) => (
+            <span
+              key={i}
+              className={`gj-ember absolute bottom-12 block h-[3px] w-[3px] rounded-none ${
+                e.amber ? "bg-[#ECC94B]" : "bg-red-600"
+              }`}
+              style={
+                {
+                  left: e.left,
+                  "--dur": e.dur,
+                  "--delay": e.delay,
+                  "--sway": e.sway,
+                } as React.CSSProperties
+              }
+            />
+          ))}
+        </div>
 
         {/* Crimson edge slab — asymmetric anchor */}
         <div
