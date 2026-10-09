@@ -178,7 +178,7 @@ export default function PublicHomePage() {
                 aria-hidden
                 className={`absolute inset-0 -translate-x-full rounded-none bg-red-600 ${MOTION} group-hover:translate-x-0`}
               />
-              <span className="relative z-10">Secure a Table</span>
+              <span className="relative z-10">See the Live Table</span>
               <span
                 aria-hidden
                 className={`relative z-10 inline-block ${MOTION} group-hover:translate-x-1.5`}
@@ -235,9 +235,306 @@ export default function PublicHomePage() {
         />
       </section>
 
-      {/* ───────────── PART 2 STARTS HERE ─────────────
-          Place the next section directly below the Hero <section>.
-          The closing </main> and component brace are already in place. */}
+      {/* ───────────── PART 2 ─────────────
+    Replace the "PART 2 STARTS HERE" placeholder comment and everything
+    after it (the closing </main>, component brace, and EOF) with this block. */}
+
+      <style>{REVEAL_FX}</style>
+
+      <FeastAtAGlance />
+      <HouseRulesBanner />
     </main>
+  );
+}
+
+/* ───────────── Scroll-Reveal Rigging (CSS-only, no client JS) ───────────── */
+const REVEAL_FX = `
+  @keyframes gj-reveal {
+    from { opacity: 0; transform: translate3d(0, 32px, 0); }
+    to   { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+  @supports (animation-timeline: view()) {
+    .gj-reveal {
+      animation: gj-reveal 1s cubic-bezier(0.25, 1, 0.5, 1) both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .gj-reveal { animation: none !important; }
+  }
+`;
+
+/* ───────────── Types ───────────── */
+type PricingTier = {
+  price: string;
+  name: string;
+  blurb: string;
+  flagship?: boolean;
+};
+
+type HouseRule = {
+  code: string;
+  title: string;
+  detail: string;
+};
+
+/* ───────────── Static Config ───────────── */
+const ENTRY_TIERS: readonly PricingTier[] = [
+  {
+    price: "₱299",
+    name: "Starter Spread",
+    blurb: "Grill basics // rice // house sides",
+  },
+  {
+    price: "₱399",
+    name: "Street Classic",
+    blurb: "Grill + fried favorites // skewers",
+  },
+  {
+    price: "₱499",
+    name: "Night Market",
+    blurb: "Full grill // seafood // hot pots",
+  },
+] as const;
+
+const FLAGSHIP_TIER: PricingTier = {
+  price: "₱699",
+  name: "Royal Feast",
+  blurb: "Every station // premium cuts // zero limits",
+  flagship: true,
+};
+
+const HOUSE_RULES: readonly HouseRule[] = [
+  {
+    code: "01",
+    title: "No Left-Over Policy",
+    detail: "Take what you can finish. Plates are checked before they leave the table.",
+  },
+  {
+    code: "02",
+    title: "₱1/Gram Charge",
+    detail: "Uneaten food is weighed and billed per gram of waste.",
+  },
+  {
+    code: "03",
+    title: "1 Unli Set Per Table",
+    detail: "One unlimited set is shared across the whole table, one tier per table.",
+  },
+] as const;
+
+/* ───────────── Section: Feast at a Glance ───────────── */
+function FeastAtAGlance() {
+  return (
+    <section
+      aria-labelledby="feast-heading"
+      className={`relative w-full rounded-none bg-[#000000] pb-16 pl-5 pr-4 pt-16 md:pb-28 md:pl-14 md:pr-8 md:pt-28 lg:pl-24 ${MOTION}`}
+    >
+      {/* Crimson edge slab — continues the hero anchor */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-0 top-0 h-full w-2 rounded-none bg-red-600 md:w-3"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-2 top-0 h-full w-px bg-[#ECC94B]/60 md:left-3"
+      />
+
+      <div className="relative z-10 flex flex-col gap-10 md:gap-14">
+        {/* Section header */}
+        <div className={`gj-reveal flex flex-col gap-4 ${MOTION}`}>
+          <div className="flex items-center gap-3">
+            <span className="inline-block h-3 w-3 rounded-none bg-red-600" />
+            <span className="font-mono text-xs font-black uppercase tracking-tighter text-[#ECC94B] md:text-sm">
+              Menu Board // Tonight
+            </span>
+          </div>
+          <h2
+            id="feast-heading"
+            className="max-w-[16ch] text-4xl font-extrabold uppercase leading-[0.92] tracking-wider text-[#FFFFFF] md:text-7xl"
+          >
+            Feast <span className="text-red-600">at a Glance</span>
+          </h2>
+        </div>
+
+        {/* Asymmetric board: 3 stacked entry rows (7 cols) + flagship slab (5 cols) */}
+        <div className="grid grid-cols-1 gap-px rounded-none border border-red-600/30 bg-red-600/30 lg:grid-cols-12">
+          <div className="flex flex-col gap-px lg:col-span-7">
+            {ENTRY_TIERS.map((tier) => (
+              <div
+                key={tier.name}
+                className={`gj-reveal flex flex-1 bg-[#000000] ${MOTION}`}
+              >
+                <TierLink tier={tier} />
+              </div>
+            ))}
+          </div>
+
+          <div
+            className={`gj-reveal flex bg-[#000000] lg:col-span-5 ${MOTION}`}
+          >
+            <TierLink tier={FLAGSHIP_TIER} />
+          </div>
+        </div>
+
+        <p className="max-w-xl font-mono text-xs font-black uppercase tracking-tighter text-[#FFFFFF]/60 md:text-sm">
+          Tap any tier to see the full spread →
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/* ───────────── Tier Link — Action-Button Pattern ───────────── */
+function TierLink({ tier }: { tier: PricingTier }) {
+  const { price, name, blurb, flagship } = tier;
+
+  return (
+    <Link
+      href="/menu"
+      aria-label={`${name} — ${price}. View menu`}
+      className={`group relative flex w-full select-none flex-col justify-between gap-8 overflow-hidden rounded-none border border-transparent bg-transparent text-[#FFFFFF] ${MOTION} hover:border-red-600 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[#ECC94B] ${
+        flagship
+          ? "p-6 md:p-10 lg:min-h-[28rem]"
+          : "px-6 py-6 md:px-10 md:py-8"
+      }`}
+    >
+      {/* Crimson flash block — slides in on hover */}
+      <span
+        aria-hidden
+        className={`absolute inset-0 -translate-x-full rounded-none bg-red-600 ${MOTION} group-hover:translate-x-0`}
+      />
+
+      {flagship && (
+        <span className="relative z-10 inline-flex w-fit rounded-none bg-[#ECC94B] px-2 py-1 font-mono text-[10px] font-black uppercase tracking-tighter text-[#000000] md:text-xs">
+          Flagship
+        </span>
+      )}
+
+      <div
+        className={`relative z-10 flex gap-4 ${
+          flagship
+            ? "flex-col"
+            : "flex-col sm:flex-row sm:items-end sm:justify-between"
+        }`}
+      >
+        <span
+          className={`font-black leading-[0.85] tracking-tighter text-[#ECC94B] ${MOTION} group-hover:text-[#000000] ${
+            flagship
+              ? "text-8xl md:text-9xl"
+              : "text-6xl md:text-8xl"
+          }`}
+        >
+          {price}
+        </span>
+
+        <div
+          className={`flex flex-col gap-1 ${
+            flagship ? "" : "sm:max-w-[16rem] sm:text-right"
+          }`}
+        >
+          <span
+            className={`font-extrabold uppercase leading-tight tracking-wider text-[#FFFFFF] ${
+              flagship ? "text-2xl md:text-4xl" : "text-lg md:text-2xl"
+            }`}
+          >
+            {name}
+          </span>
+          <span className="font-mono text-[11px] font-black uppercase tracking-tighter text-[#FFFFFF]/60 group-hover:text-[#FFFFFF] md:text-xs">
+            {blurb}
+          </span>
+        </div>
+      </div>
+
+      <span
+        aria-hidden
+        className={`relative z-10 inline-block font-black text-[#FFFFFF] ${MOTION} group-hover:translate-x-1.5 ${
+          flagship ? "text-3xl" : "absolute bottom-4 right-5 text-xl md:bottom-6 md:right-8"
+        }`}
+      >
+        →
+      </span>
+    </Link>
+  );
+}
+
+/* ───────────── Section: House Rules Foot-Banner ───────────── */
+function HouseRulesBanner() {
+  return (
+    <section
+      aria-labelledby="rules-heading"
+      className={`relative w-full rounded-none bg-[#000000] pb-16 pl-5 pr-4 pt-4 md:pb-24 md:pl-14 md:pr-8 lg:pl-24 ${MOTION}`}
+    >
+      {/* Crimson edge slab */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-0 top-0 h-full w-2 rounded-none bg-red-600 md:w-3"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute left-2 top-0 h-full w-px bg-[#ECC94B]/60 md:left-3"
+      />
+
+      <div
+        className={`gj-reveal relative z-10 rounded-none border border-red-600/30 bg-[#000000] ${MOTION}`}
+      >
+        {/* Banner header strip */}
+        <div className="flex flex-col gap-2 border-b border-red-600/30 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-8 md:py-5">
+          <h2
+            id="rules-heading"
+            className="font-mono text-sm font-black uppercase tracking-tighter text-[#ECC94B] md:text-base"
+          >
+            House Rules // Read Before You Plate
+          </h2>
+          <span className="font-mono text-[10px] font-black uppercase tracking-tighter text-[#FFFFFF]/60 md:text-xs">
+            Applies Nightly // No Exceptions
+          </span>
+        </div>
+
+        {/* Rules grid */}
+        <ul className="grid grid-cols-1 gap-px rounded-none bg-red-600/30 md:grid-cols-3">
+          {HOUSE_RULES.map(({ code, title, detail }) => (
+            <li
+              key={code}
+              className={`group flex flex-col gap-6 rounded-none bg-[#000000] px-5 py-6 ${MOTION} hover:bg-red-600/10 md:px-8 md:py-10`}
+            >
+              <span className="font-mono text-xs font-black tracking-tighter text-red-600 md:text-sm">
+                [{code}]
+              </span>
+              <h3 className="text-2xl font-black uppercase leading-[0.95] tracking-tighter text-[#ECC94B] md:text-4xl">
+                {title}
+              </h3>
+              <p className="font-mono text-xs font-bold uppercase leading-relaxed tracking-tighter text-[#FFFFFF]/70 md:text-sm">
+                {detail}
+              </p>
+            </li>
+          ))}
+        </ul>
+
+        {/* Banner footer strip */}
+        <div className="flex flex-col gap-4 border-t border-red-600/30 px-5 py-4 md:flex-row md:items-center md:justify-between md:px-8 md:py-5">
+          <span className="font-mono text-[10px] font-black uppercase tracking-tighter text-[#FFFFFF]/60 md:text-xs">
+            Questions? Ask any floor staff before you start plating.
+          </span>
+
+          <Link
+            href="/reservations"
+            className={`group relative inline-flex select-none items-center justify-between gap-6 overflow-hidden rounded-none border border-red-600/30 bg-transparent px-6 py-3 text-sm font-black uppercase tracking-wider text-[#FFFFFF] ${MOTION} hover:border-red-600 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ECC94B]`}
+          >
+            <span
+              aria-hidden
+              className={`absolute inset-0 -translate-x-full rounded-none bg-red-600 ${MOTION} group-hover:translate-x-0`}
+            />
+            <span className="relative z-10">Secure a Table</span>
+            <span
+              aria-hidden
+              className={`relative z-10 inline-block ${MOTION} group-hover:translate-x-1.5`}
+            >
+              →
+            </span>
+          </Link>
+        </div>
+      </div>
+    </section>
   );
 }
