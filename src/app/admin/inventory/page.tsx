@@ -142,6 +142,21 @@ export default function InventoryPage() {
     return null;
   }
 
+  async function discardBatch(batch: FefoBatch) {
+    const confirmed = window.confirm(
+      `Discard ${batch.ingredient.name} (batch ${batch.batch_number}, ${batch.quantity} ${batch.ingredient.unit})?\n\nThe whole batch is cleared from the stock list and recorded in Recent Activity. This cannot be undone.`
+    );
+    if (!confirmed) return;
+    const res = await apiFetch<InventoryBatch>(`/api/inventory/batches/${batch.id}/discard`, {
+      method: "POST",
+    });
+    if (!res.success) {
+      setError(res.error ?? "Could not discard the batch.");
+      return;
+    }
+    await load();
+  }
+
   async function editBatch(values: EditBatchValues): Promise<string | null> {
     if (!editing) return "No batch selected.";
 
@@ -264,6 +279,7 @@ export default function InventoryPage() {
             <tbody>
               {rows.map(({ batch, status }) => {
                 const canDeduct = status !== "Expired" && status !== "Depleted";
+                const canDiscard = status === "Expired";
                 return (
                   <tr
                     key={batch.id}
@@ -306,7 +322,17 @@ export default function InventoryPage() {
                             Edit
                           </button>
                         )}
-                        {!canDeduct && !isAdmin && <span className="text-neutral-400">—</span>}
+                        {canDiscard && (
+                          <button
+                            onClick={() => discardBatch(batch)}
+                            className="rounded-md border border-red-300 px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-50"
+                          >
+                            Discard
+                          </button>
+                        )}
+                        {!canDeduct && !canDiscard && !isAdmin && (
+                          <span className="text-neutral-400">—</span>
+                        )}
                       </div>
                     </td>
                   </tr>

@@ -10,12 +10,14 @@ const TYPE_LABEL: Record<InventoryLog["change_type"], string> = {
   added: "Stock added",
   used: "Stock used",
   adjusted: "Adjusted",
+  discarded: "Discarded",
 };
 
 const TYPE_BADGE: Record<InventoryLog["change_type"], string> = {
   added: "bg-green-100 text-green-800",
   used: "bg-neutral-200 text-neutral-800",
   adjusted: "bg-yellow-100 text-yellow-800",
+  discarded: "bg-red-100 text-red-800",
 };
 
 // "2026-10-08T07:05:00Z" -> "Oct 8, 2026, 3:05 PM" (restaurant time)
