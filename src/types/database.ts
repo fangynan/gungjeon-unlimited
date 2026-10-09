@@ -110,7 +110,7 @@ export interface InventoryLog {
   ingredient_name: string;
   batch_number: string;
   unit: string;
-  change_type: "added" | "used" | "adjusted";
+  change_type: "added" | "used" | "adjusted" | "discarded";
   /** Positive = stock went up, negative = stock went down. */
   quantity_changed: number;
   user_id: string | null;
