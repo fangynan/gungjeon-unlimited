@@ -23,7 +23,7 @@ useEffect(() => {
 <div className="absolute inset-0 -z-20">
   <div
     aria-hidden
-    className="absolute inset-0 animate-pulse bg-neutral-800 motion-reduce:animate-none"
+    className="absolute inset-0 animate-pulse  motion-reduce:animate-none"
   />
   <Image
     src="/images/hero_02.jpg"
@@ -39,7 +39,7 @@ useEffect(() => {
 </div>
       <div
         aria-hidden
-        className="absolute inset-0 -z-10 animate-pulse bg-neutral-800 motion-reduce:animate-none"
+        className="absolute inset-0 -z-10  motion-reduce:animate-none"
       >
         <span className="absolute bottom-24 left-4 font-mono text-[11px] uppercase tracking-widest text-neutral-300 sm:left-6">
           Hero background · drop image here · 1920×1080+

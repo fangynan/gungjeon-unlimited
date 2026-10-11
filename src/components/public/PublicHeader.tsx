@@ -18,7 +18,7 @@ const LINKS = [
   { label: "Contact", href: "/contact" },
 ];
 
-const CTA_LABEL = "Reserve a Table"; // text only; the route is unchanged
+const CTA_LABEL = "View Available Tables"; // text only; the route is unchanged
 
 const SNAP = "ease-[cubic-bezier(0.25,1,0.5,1)]";
 
