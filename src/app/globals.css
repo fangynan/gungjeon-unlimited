@@ -24,3 +24,12 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@theme inline {
+  --font-serif-display: var(--font-noto-serif-kr), "Nanum Myeongjo", Georgia, serif;
+  --color-ink: #0b0908;
+  --color-paper: #efe7da;
+  --color-gold: #c9a45c;
+  --color-ember: #9b1c1c;
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+}

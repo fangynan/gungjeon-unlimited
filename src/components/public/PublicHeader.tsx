@@ -4,7 +4,11 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AnimatePresence, MotionConfig, motion, type Variants } from "motion/react";
 import { RESTAURANT } from "@/lib/restaurant-info";
+import { serif } from "@/lib/fonts";
+import { EASE_OUT } from "@/components/home/motion-presets";
+import BrandLogo from "./BrandLogo";
 
 const LINKS = [
   { label: "Home", href: "/" },
@@ -14,11 +18,28 @@ const LINKS = [
   { label: "Contact", href: "/contact" },
 ];
 
+const CTA_LABEL = "Reserve a Table"; // text only; the route is unchanged
+
 const SNAP = "ease-[cubic-bezier(0.25,1,0.5,1)]";
+
+const panel: Variants = {
+  hidden: { opacity: 0, y: -8 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.2, ease: EASE_OUT, delayChildren: 0.04, staggerChildren: 0.04 },
+  },
+  exit: { opacity: 0, y: -8, transition: { duration: 0.15, ease: EASE_OUT } },
+};
+const row: Variants = {
+  hidden: { opacity: 0, y: 8 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.25, ease: EASE_OUT } },
+};
 
 export default function PublicHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -29,145 +50,179 @@ export default function PublicHeader() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 32);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   function isActive(href: string) {
     return href === "/" ? pathname === "/" : pathname.startsWith(href);
   }
 
+  // The mobile panel needs a solid bar behind it even at the top of the page.
+  const solid = scrolled || open;
+
   return (
-    <header className="fixed inset-x-0 top-0 z-50 rounded-none border-b border-red-600/30 bg-[#000000]">
-      {/* Status strip */}
-      <div className="flex h-7 items-center justify-between rounded-none border-b border-white/10 bg-[#1A1A1A] px-4 font-mono text-[11px] font-bold uppercase tracking-widest text-[#A0AEC0]">
-        <span className="flex items-center gap-2">
-          <span className="inline-block h-2 w-2 rounded-none bg-[#E53E3E]" aria-hidden />
-          <span className="text-[#ECC94B]">Open daily</span>
-          <span className="hidden sm:inline">/ {RESTAURANT.hours}</span>
-        </span>
-        <a
-          href={`tel:${RESTAURANT.phoneLink}`}
-          className={`transition-colors duration-100 ${SNAP} hover:text-[#ECC94B] active:scale-95`}
-        >
-          {RESTAURANT.phone}
-        </a>
-      </div>
+    <MotionConfig reducedMotion="user">
+      <header className={`${serif.variable} fixed inset-x-0 top-0 z-50`}>
+        {/* Background layers cross-fade on opacity only (no backdrop-filter). */}
+        <span
+          aria-hidden
+          className={`pointer-events-none absolute inset-0 bg-gradient-to-b from-black/80 to-transparent transition-opacity duration-200 ${SNAP} motion-reduce:transition-none ${
+            solid ? "opacity-0" : "opacity-100"
+          }`}
+        />
+        <span
+          aria-hidden
+          className={`pointer-events-none absolute inset-0 border-b border-gold/20 bg-ink transition-opacity duration-200 ${SNAP} motion-reduce:transition-none ${
+            solid ? "opacity-100" : "opacity-0"
+          }`}
+        />
 
-      {/* Main bar */}
-      <div className="mx-auto flex h-16 max-w-6xl items-stretch justify-between px-4">
-        <Link
-          href="/"
-          onClick={() => setOpen(false)}
-          className={`group flex items-center gap-3 transition-transform duration-100 ${SNAP} active:scale-95`}
-        >
-          <span
-            className={`flex h-10 w-10 items-center justify-center rounded-none bg-[#E53E3E] font-mono text-sm font-extrabold tracking-wider text-white transition-colors duration-100 ${SNAP} group-hover:bg-[#ECC94B] group-hover:text-black`}
+        {/* Status strip (28px) */}
+        <div className="relative flex h-7 items-center justify-between border-b border-white/10 px-4 text-[11px] font-medium uppercase tracking-[0.2em] text-paper/60 sm:px-6 lg:px-8">
+          <span className="flex items-center gap-2">
+            <span className="inline-block size-1.5 rounded-full bg-gold" aria-hidden />
+            <span className="text-gold">Open daily</span>
+            <span className="hidden sm:inline">/ {RESTAURANT.hours}</span>
+          </span>
+          <a
+            href={`tel:${RESTAURANT.phoneLink}`}
+            className={`transition-colors duration-100 ${SNAP} hover:text-gold active:scale-95`}
           >
-            GU
-          </span>
-          <span className="text-sm font-extrabold uppercase tracking-wider text-white sm:text-lg">
-            {RESTAURANT.name}
-          </span>
-        </Link>
+            {RESTAURANT.phone}
+          </a>
+        </div>
 
-        {/* Desktop nav */}
-        <nav aria-label="Primary" className="hidden items-stretch md:flex">
-          {LINKS.map((l) => {
-            const active = isActive(l.href);
-            return (
-              <Link
-                key={l.href}
-                href={l.href}
-                aria-current={active ? "page" : undefined}
-                className={`group relative flex items-center rounded-none border-l border-white/10 px-4 text-xs font-extrabold uppercase tracking-wider transition-colors duration-100 ${SNAP} active:scale-95 ${
-                  active ? "text-white" : "text-[#A0AEC0] hover:text-[#ECC94B]"
-                }`}
-              >
-                {l.label}
-                <span
-                  aria-hidden
-                  className={`absolute inset-x-0 bottom-0 h-[3px] origin-left bg-[#E53E3E] transition-transform duration-150 ${SNAP} ${
-                    active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
-                  }`}
-                />
-              </Link>
-            );
-          })}
-        </nav>
-
-        <div className="flex items-center gap-3">
-          {/* Booking CTA */}
+        {/* Main bar (64px) */}
+        <div className="relative mx-auto flex h-16 max-w-7xl items-stretch justify-between gap-4 px-4 sm:px-6 lg:px-8">
           <Link
-            href="/table-availability"
+            href="/"
             onClick={() => setOpen(false)}
-            className={`group relative hidden h-10 items-center overflow-hidden rounded-none bg-[#ECC94B] px-5 font-mono text-xs font-extrabold uppercase tracking-widest text-black transition-[color,transform] duration-100 ${SNAP} hover:text-white active:scale-95 md:inline-flex`}
+            className={`group flex min-w-0 items-center gap-3 transition-transform duration-100 ${SNAP} active:scale-95`}
           >
-            <span
-              aria-hidden
-              className={`absolute inset-0 -translate-x-full bg-[#E53E3E] transition-transform duration-150 ${SNAP} group-hover:translate-x-0`}
-            />
-            <span className="relative">View Available Tables →</span>
+            <BrandLogo className="size-10" sizes="40px" priority />
+            <span className="hidden truncate font-serif-display text-lg tracking-[0.03em] text-paper transition-colors duration-100 group-hover:text-gold min-[400px]:inline">
+              {RESTAURANT.name}
+            </span>
           </Link>
 
-          {/* Mobile toggle */}
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            aria-expanded={open}
-            aria-controls="mobile-nav"
-            className={`h-10 rounded-none border border-white/10 px-4 font-mono text-xs font-extrabold uppercase tracking-widest transition-[background-color,color,transform] duration-100 ${SNAP} active:scale-95 md:hidden ${
-              open
-                ? "bg-[#E53E3E] text-white"
-                : "bg-transparent text-white hover:bg-[#ECC94B] hover:text-black"
-            }`}
-          >
-            {open ? "Close" : "Menu"}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile panel */}
-      <nav
-        id="mobile-nav"
-        aria-label="Mobile"
-        aria-hidden={!open}
-        className={`absolute inset-x-0 top-full rounded-none border-b border-red-600/30 bg-[#000000] transition-[clip-path,visibility] duration-200 ${SNAP} motion-reduce:transition-none md:hidden ${
-          open
-            ? "visible [clip-path:inset(0_0_0_0)]"
-            : "invisible [clip-path:inset(0_0_100%_0)]"
-        }`}
-      >
-        <ul className="grid">
-          {LINKS.map((l, i) => {
-            const active = isActive(l.href);
-            return (
-              <li key={l.href} className="border-b border-white/10">
+          {/* Desktop nav */}
+          <nav aria-label="Primary" className="hidden items-stretch md:flex">
+            {LINKS.map((l) => {
+              const active = isActive(l.href);
+              return (
                 <Link
+                  key={l.href}
                   href={l.href}
-                  onClick={() => setOpen(false)}
-                  tabIndex={open ? 0 : -1}
                   aria-current={active ? "page" : undefined}
-                  className={`flex items-center justify-between rounded-none px-4 py-4 text-lg font-extrabold uppercase tracking-wider transition-[background-color,color,transform] duration-100 ${SNAP} active:scale-[0.98] ${
-                    active
-                      ? "bg-[#E53E3E] text-white"
-                      : "text-white hover:bg-[#1A1A1A] hover:text-[#ECC94B]"
+                  className={`group relative flex items-center px-3 text-[12px] font-medium uppercase tracking-[0.14em] transition-colors duration-100 ${SNAP} active:scale-95 lg:px-4 ${
+                    active ? "text-paper" : "text-paper/70 hover:text-gold"
                   }`}
                 >
-                  <span>{l.label}</span>
-                  <span className="font-mono text-xs tracking-widest text-[#A0AEC0]">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
+                  {l.label}
+                  <span
+                    aria-hidden
+                    className={`absolute inset-x-3 bottom-5 h-px origin-center bg-gold transition-transform duration-200 lg:inset-x-4 ${SNAP} ${
+                      active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+                    }`}
+                  />
                 </Link>
-              </li>
-            );
-          })}
-        </ul>
-        <Link
-          href="/table-availability"
-          onClick={() => setOpen(false)}
-          tabIndex={open ? 0 : -1}
-          className={`block rounded-none bg-[#ECC94B] px-4 py-4 text-center font-mono text-sm font-extrabold uppercase tracking-widest text-black transition-[background-color,color,transform] duration-100 ${SNAP} hover:bg-[#E53E3E] hover:text-white active:scale-95`}
-        >
-          View Available Tables →
-        </Link>
-      </nav>
-    </header>
+              );
+            })}
+          </nav>
+
+          <div className="flex items-center gap-3">
+            {/* Booking CTA */}
+            <Link
+              href="/table-availability"
+              onClick={() => setOpen(false)}
+              className={`group relative hidden h-10 items-center overflow-hidden bg-gold px-5 text-[12px] font-semibold uppercase tracking-[0.16em] text-ink shadow-[0_0_28px_-8px_rgba(201,164,92,0.7)] transition-transform duration-100 ${SNAP} active:scale-95 md:inline-flex`}
+            >
+              <span
+                aria-hidden
+                className={`absolute inset-0 -translate-x-full bg-[#f1dcaa] transition-transform duration-200 ${SNAP} group-hover:translate-x-0`}
+              />
+              <span className="relative flex items-center gap-2">
+                {CTA_LABEL}
+                <span
+                  aria-hidden
+                  className={`transition-transform duration-200 ${SNAP} group-hover:translate-x-1`}
+                >
+                  →
+                </span>
+              </span>
+            </Link>
+
+            {/* Mobile toggle */}
+            <button
+              type="button"
+              onClick={() => setOpen((v) => !v)}
+              aria-expanded={open}
+              aria-controls="mobile-nav"
+              className={`h-10 border px-4 text-[12px] font-semibold uppercase tracking-[0.16em] transition-[background-color,border-color,color,transform] duration-100 ${SNAP} active:scale-95 md:hidden ${
+                open
+                  ? "border-gold bg-gold text-ink"
+                  : "border-gold/40 bg-transparent text-paper hover:border-gold hover:text-gold"
+              }`}
+            >
+              {open ? "Close" : "Menu"}
+            </button>
+          </div>
+        </div>
+
+        {/* Mobile panel: mounts/unmounts with Framer Motion, so it is interruptible */}
+        <AnimatePresence>
+          {open && (
+            <motion.nav
+              key="mobile-nav"
+              id="mobile-nav"
+              aria-label="Mobile"
+              variants={panel}
+              initial="hidden"
+              animate="show"
+              exit="exit"
+              className="absolute inset-x-0 top-full border-b border-gold/20 bg-ink md:hidden"
+            >
+              <ul className="grid">
+                {LINKS.map((l, i) => {
+                  const active = isActive(l.href);
+                  return (
+                    <motion.li key={l.href} variants={row} className="border-b border-white/10">
+                      <Link
+                        href={l.href}
+                        onClick={() => setOpen(false)}
+                        aria-current={active ? "page" : undefined}
+                        className={`flex items-center justify-between px-4 py-4 font-serif-display text-xl transition-[background-color,color,transform] duration-100 ${SNAP} active:scale-[0.98] sm:px-6 ${
+                          active
+                            ? "bg-white/[0.04] text-gold"
+                            : "text-paper hover:bg-white/[0.04] hover:text-gold"
+                        }`}
+                      >
+                        <span>{l.label}</span>
+                        <span className="font-sans text-xs tabular-nums tracking-widest text-paper/40">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                      </Link>
+                    </motion.li>
+                  );
+                })}
+              </ul>
+              <motion.div variants={row} className="p-4 sm:px-6">
+                <Link
+                  href="/table-availability"
+                  onClick={() => setOpen(false)}
+                  className={`flex h-12 items-center justify-center bg-gold text-[13px] font-semibold uppercase tracking-[0.16em] text-ink transition-transform duration-100 ${SNAP} active:scale-[0.98]`}
+                >
+                  {CTA_LABEL} →
+                </Link>
+              </motion.div>
+            </motion.nav>
+          )}
+        </AnimatePresence>
+      </header>
+    </MotionConfig>
   );
 }
