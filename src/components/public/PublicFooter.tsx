@@ -9,7 +9,7 @@ import { fadeUp, stagger } from "@/components/home/motion-presets";
 import BrandLogo from "./BrandLogo";
 
 const SNAP = "ease-[cubic-bezier(0.25,1,0.5,1)]";
-const CTA_LABEL = "Reserve a Table"; // text only; the route is unchanged
+const CTA_LABEL = "View Live Table"; // text only; the route is unchanged
 
 const NAV = [
   { label: "Home", href: "/" },
@@ -132,34 +132,20 @@ export default function PublicFooter() {
               </li>
             </ul>
 
-            {/* ─────────────────────────────────────────────────────────────
-                SOCIAL ICON PLACEHOLDERS (one <div> per network)
-                To make one real, replace its <div> with, for example:
-
-                  <a
-                    href="https://facebook.com/YOUR-PAGE"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Facebook"
-                    className="flex size-11 items-center justify-center rounded-full border border-gold/40 text-paper transition-[color,border-color,transform] duration-100 ease-[cubic-bezier(0.25,1,0.5,1)] hover:border-gold hover:text-gold active:scale-95"
-                  >
-                    <Image src="/icons/facebook.svg" alt="" width={20} height={20} />
-                  </a>
-
-                (add `import Image from "next/image"` and put the SVG in public/icons/)
-               ───────────────────────────────────────────────────────────── */}
             <ul className="flex items-center gap-3 pt-2">
-              {SOCIALS.map((s) => (
-                <li key={s.label}>
-                  <div
-                    role="img"
-                    aria-label={`${s.label} icon placeholder`}
-                    className="flex size-11 animate-pulse items-center justify-center rounded-full border border-dashed border-gold/40 bg-neutral-800 font-mono text-[10px] uppercase tracking-widest text-neutral-300 motion-reduce:animate-none"
-                  >
-                    {s.short}
-                  </div>
-                </li>
-              ))}
+              <li>
+                <a
+                href="https://www.facebook.com/juanciborestaurant"
+                target="_blank"
+                 rel="noopener noreferrer"
+                aria-label="Facebook (opens in a new tab)"
+                className={`flex size-11 items-center justify-center rounded-full border border-gold/40 text-paper transition-[color,border-color,transform] duration-100 ${SNAP} hover:border-gold hover:text-gold active:scale-95`}
+                 >
+                <svg viewBox="0 0 24 24" aria-hidden className="size-5 fill-current">
+                  <path d="M14 8.5V6.9c0-.7.2-1.1 1.2-1.1H17V3h-2.5C11.9 3 11 4.6 11 6.6v1.9H9v3h2V21h3v-9.5h2.4l.4-3H14z" />
+                </svg>
+                </a>
+              </li>
             </ul>
           </motion.section>
 

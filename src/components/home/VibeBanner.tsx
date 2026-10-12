@@ -34,7 +34,6 @@ export default function VibeBanner() {
         {/* BANNER BACKGROUND: photo goes in public/images/vibe-banner.jpg */}
         <div className="absolute inset-0 animate-pulse bg-neutral-800 motion-reduce:animate-none">
           <span className="absolute left-4 top-1/2 font-mono text-[11px] uppercase tracking-widest text-neutral-300 sm:left-6">
-            Banner background · add /images/vibe-banner.jpg
           </span>
         </div>
         <Image
@@ -104,13 +103,6 @@ export default function VibeBanner() {
           variants={fadeUp}
           className="mt-10 flex w-full flex-col items-stretch justify-center gap-4 sm:w-auto sm:flex-row"
         >
-          {/* NOTE: /grilling-guide does not exist yet and will 404 until built */}
-          <Link
-            href="/grilling-guide"
-            className="inline-flex h-12 items-center justify-center whitespace-nowrap bg-gold px-8 text-[13px] font-semibold uppercase tracking-[0.14em] text-ink transition-[background-color,transform] duration-100 ease-out-quart hover:bg-[#dcb872] active:scale-[0.97]"
-          >
-            Read the Grilling Guide
-          </Link>
           <Link
             href="/table-availability"
             className="inline-flex h-12 items-center justify-center whitespace-nowrap border border-gold/50 px-8 text-[13px] font-semibold uppercase tracking-[0.14em] text-paper transition-[color,border-color,transform] duration-100 ease-out-quart hover:border-gold hover:text-gold active:scale-[0.97]"
