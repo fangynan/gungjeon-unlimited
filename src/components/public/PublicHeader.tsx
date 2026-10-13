@@ -14,11 +14,20 @@ const LINKS = [
   { label: "Home", href: "/" },
   { label: "About", href: "/about" },
   { label: "Menu", href: "/menu" },
-  { label: "Table Availability", href: "/table-availability" },
   { label: "Contact", href: "/contact" },
 ];
 
-const CTA_LABEL = "View Available Tables"; // text only; the route is unchanged
+const CTA_LABEL = "View Table Availability"; // text only; the route is /table-availability
+
+/** Small pulsing "live" dot (opacity + size only). Dark green so it reads on the gold button. */
+function LiveDot() {
+  return (
+    <span aria-hidden className="relative flex size-2 shrink-0">
+      <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-700/60 motion-reduce:animate-none" />
+      <span className="relative inline-flex size-2 rounded-full bg-emerald-700" />
+    </span>
+  );
+}
 
 const SNAP = "ease-[cubic-bezier(0.25,1,0.5,1)]";
 
@@ -135,18 +144,21 @@ export default function PublicHeader() {
           </nav>
 
           <div className="flex items-center gap-3">
-            {/* Booking CTA */}
+            {/* Booking CTA (live dot = check live availability) */}
             <Link
               href="/table-availability"
               onClick={() => setOpen(false)}
+              aria-current={isActive("/table-availability") ? "page" : undefined}
               className={`group relative hidden h-10 items-center overflow-hidden bg-gold px-5 text-[12px] font-semibold uppercase tracking-[0.16em] text-ink shadow-[0_0_28px_-8px_rgba(201,164,92,0.7)] transition-transform duration-100 ${SNAP} active:scale-95 md:inline-flex`}
             >
               <span
                 aria-hidden
                 className={`absolute inset-0 -translate-x-full bg-[#f1dcaa] transition-transform duration-200 ${SNAP} group-hover:translate-x-0`}
               />
-              <span className="relative flex items-center gap-2">
+              <span className="relative flex items-center gap-2.5">
+                <LiveDot />
                 {CTA_LABEL}
+                <span className="sr-only">(live availability)</span>
                 <span
                   aria-hidden
                   className={`transition-transform duration-200 ${SNAP} group-hover:translate-x-1`}
@@ -214,9 +226,12 @@ export default function PublicHeader() {
                 <Link
                   href="/table-availability"
                   onClick={() => setOpen(false)}
-                  className={`flex h-12 items-center justify-center bg-gold text-[13px] font-semibold uppercase tracking-[0.16em] text-ink transition-transform duration-100 ${SNAP} active:scale-[0.98]`}
+                  className={`flex h-12 items-center justify-center gap-2.5 bg-gold text-[13px] font-semibold uppercase tracking-[0.16em] text-ink transition-transform duration-100 ${SNAP} active:scale-[0.98]`}
                 >
-                  {CTA_LABEL} →
+                  <LiveDot />
+                  {CTA_LABEL}
+                  <span className="sr-only">(live availability)</span>
+                  <span aria-hidden>→</span>
                 </Link>
               </motion.div>
             </motion.nav>

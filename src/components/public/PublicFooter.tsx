@@ -1,7 +1,9 @@
 // src/components/public/PublicFooter.tsx
 "use client";
 
+import type { MouseEvent } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { MotionConfig, motion } from "motion/react";
 import { RESTAURANT } from "@/lib/restaurant-info";
 import { serif } from "@/lib/fonts";
@@ -9,7 +11,6 @@ import { fadeUp, stagger } from "@/components/home/motion-presets";
 import BrandLogo from "./BrandLogo";
 
 const SNAP = "ease-[cubic-bezier(0.25,1,0.5,1)]";
-const CTA_LABEL = "View Live Table"; // text only; the route is unchanged
 
 const NAV = [
   { label: "Home", href: "/" },
@@ -17,12 +18,6 @@ const NAV = [
   { label: "Menu", href: "/menu" },
   { label: "Table Availability", href: "/table-availability" },
   { label: "Contact", href: "/contact" },
-];
-
-const SOCIALS = [
-  { label: "Facebook", short: "FB" },
-  { label: "Instagram", short: "IG" },
-  { label: "TikTok", short: "TT" },
 ];
 
 // Same typography as the header links
@@ -33,63 +28,38 @@ const labelClass = "text-[12px] font-medium uppercase tracking-[0.3em] text-gold
 const viewport = { once: true, amount: 0.25 } as const;
 
 export default function PublicFooter() {
+  const pathname = usePathname();
+
+  // Already on that page? Don't navigate: glide back to the top instead.
+  function handleNavClick(e: MouseEvent<HTMLAnchorElement>, href: string) {
+    if (pathname !== href) return; // different page: normal navigation
+    e.preventDefault();
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+  }
+
   return (
     <MotionConfig reducedMotion="user">
       <footer className={`${serif.variable} border-t border-gold/20 bg-ink text-paper`}>
-        {/* Brand banner */}
-        <div className="border-b border-white/10 bg-[#0f0d0b]">
-          <motion.div
-            variants={stagger(0, 0.1)}
-            initial="hidden"
-            whileInView="show"
-            viewport={viewport}
-            className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-12 sm:px-10 lg:flex-row lg:items-center lg:justify-between lg:px-16"
-          >
-            <div className="flex min-w-0 items-center gap-5">
-              <motion.div variants={fadeUp}>
-                <BrandLogo className="size-16 sm:size-20" sizes="80px" />
-              </motion.div>
-              <div className="min-w-0">
-                <motion.p
-                  variants={fadeUp}
-                  className="break-words font-serif-display text-3xl leading-none tracking-[-0.01em] text-paper sm:text-4xl"
-                >
-                  {RESTAURANT.name}
-                </motion.p>
-                <motion.p variants={fadeUp} className="mt-3 max-w-md text-sm leading-relaxed text-paper/65">
-                  {RESTAURANT.tagline}
-                </motion.p>
-              </div>
-            </div>
-
-            <motion.div variants={fadeUp} className="self-start lg:self-auto">
-              <Link
-                href="/table-availability"
-                className={`group relative inline-flex h-12 items-center overflow-hidden bg-gold px-7 text-[12px] font-semibold uppercase tracking-[0.16em] text-ink shadow-[0_0_28px_-8px_rgba(201,164,92,0.7)] transition-transform duration-100 ${SNAP} active:scale-95`}
-              >
-                <span
-                  aria-hidden
-                  className={`absolute inset-0 -translate-x-full bg-[#f1dcaa] transition-transform duration-200 ${SNAP} group-hover:translate-x-0`}
-                />
-                <span className="relative flex items-center gap-2">
-                  {CTA_LABEL}
-                  <span aria-hidden className={`transition-transform duration-200 ${SNAP} group-hover:translate-x-1`}>
-                    →
-                  </span>
-                </span>
-              </Link>
-            </motion.div>
-          </motion.div>
-        </div>
-
         {/* Info columns */}
         <motion.div
           variants={stagger(0, 0.1)}
           initial="hidden"
           whileInView="show"
           viewport={viewport}
-          className="mx-auto grid max-w-7xl gap-12 px-6 py-16 sm:grid-cols-2 sm:px-10 lg:grid-cols-4 lg:gap-10 lg:px-16"
+          className="mx-auto grid max-w-7xl gap-12 px-6 py-16 sm:grid-cols-2 sm:px-10 lg:grid-cols-[1.3fr_1fr_1fr_1fr_1fr] lg:gap-10 lg:px-16"
         >
+          {/* Brand: logo + name */}
+          <motion.section variants={fadeUp} className="min-w-0 space-y-5 sm:col-span-2 lg:col-span-1">
+            <div className="flex items-center gap-4">
+              <BrandLogo className="size-16" sizes="64px" />
+              <p className="min-w-0 break-words font-serif-display text-2xl leading-tight text-paper">
+                {RESTAURANT.name}
+              </p>
+            </div>
+            <p className="max-w-xs text-sm leading-relaxed text-paper/65">{RESTAURANT.tagline}</p>
+          </motion.section>
+
           {/* Location */}
           <motion.section variants={fadeUp} className="min-w-0 space-y-4">
             <h2 className={labelClass}>Location</h2>
@@ -135,15 +105,15 @@ export default function PublicFooter() {
             <ul className="flex items-center gap-3 pt-2">
               <li>
                 <a
-                href="https://www.facebook.com/juanciborestaurant"
-                target="_blank"
-                 rel="noopener noreferrer"
-                aria-label="Facebook (opens in a new tab)"
-                className={`flex size-11 items-center justify-center rounded-full border border-gold/40 text-paper transition-[color,border-color,transform] duration-100 ${SNAP} hover:border-gold hover:text-gold active:scale-95`}
-                 >
-                <svg viewBox="0 0 24 24" aria-hidden className="size-5 fill-current">
-                  <path d="M14 8.5V6.9c0-.7.2-1.1 1.2-1.1H17V3h-2.5C11.9 3 11 4.6 11 6.6v1.9H9v3h2V21h3v-9.5h2.4l.4-3H14z" />
-                </svg>
+                  href="https://www.facebook.com/juanciborestaurant"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Facebook (opens in a new tab)"
+                  className={`flex size-11 items-center justify-center rounded-full border border-gold/40 text-paper transition-[color,border-color,transform] duration-100 ${SNAP} hover:border-gold hover:text-gold active:scale-95`}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden className="size-5 fill-current">
+                    <path d="M14 8.5V6.9c0-.7.2-1.1 1.2-1.1H17V3h-2.5C11.9 3 11 4.6 11 6.6v1.9H9v3h2V21h3v-9.5h2.4l.4-3H14z" />
+                  </svg>
                 </a>
               </li>
             </ul>
@@ -155,7 +125,7 @@ export default function PublicFooter() {
             <ul className="space-y-3">
               {NAV.map((l) => (
                 <li key={l.href}>
-                  <Link href={l.href} className={linkClass}>
+                  <Link href={l.href} onClick={(e) => handleNavClick(e, l.href)} className={linkClass}>
                     {l.label}
                   </Link>
                 </li>
