@@ -503,44 +503,6 @@ export default function AboutContent() {
           </motion.div>
         </section>
 
-        {/* ── Invitation ── */}
-        <section aria-labelledby="invite-heading" className="px-6 pb-24 pt-4 text-center sm:px-10 lg:pb-32">
-          <motion.div
-            variants={flow(0.2, 0.05)}
-            initial="hidden"
-            whileInView="show"
-            viewport={inView}
-            className="mx-auto flex max-w-2xl flex-col items-center"
-          >
-            <motion.h2
-              id="invite-heading"
-              variants={rise}
-              className="text-balance font-serif-display text-[clamp(2rem,5vw,3.5rem)] font-normal leading-[1.1] tracking-[-0.015em] text-paper"
-            >
-              Your table is <span className="text-gold">waiting.</span>
-            </motion.h2>
-            <motion.p variants={rise} className="mt-5 text-pretty text-lg leading-8 text-paper/75">
-              Bring the whole group. We&rsquo;ll bring the banchan.
-            </motion.p>
-            <motion.div
-              variants={rise}
-              className="mt-10 flex w-full flex-col items-stretch justify-center gap-4 sm:w-auto sm:flex-row"
-            >
-              <Link
-                href="/table-availability"
-                className="inline-flex h-12 items-center justify-center whitespace-nowrap rounded-full bg-gold px-8 text-[13px] font-semibold uppercase tracking-[0.14em] text-ink transition-[background-color,transform] duration-100 ease-[cubic-bezier(0.25,1,0.5,1)] hover:bg-[#dcb872] active:scale-[0.97]"
-              >
-                View The Available Table
-              </Link>
-              <Link
-                href="/menu"
-                className="inline-flex h-12 items-center justify-center whitespace-nowrap rounded-full border border-gold/50 px-8 text-[13px] font-semibold uppercase tracking-[0.14em] text-paper transition-[color,border-color,transform] duration-100 ease-[cubic-bezier(0.25,1,0.5,1)] hover:border-gold hover:text-gold active:scale-[0.97]"
-              >
-                See the Menu
-              </Link>
-            </motion.div>
-          </motion.div>
-        </section>
       </div>
     </MotionConfig>
   );
