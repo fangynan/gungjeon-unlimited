@@ -19,7 +19,7 @@ useEffect(() => {
       aria-labelledby="hero-heading"
       className="relative isolate flex min-h-[calc(100svh-92px)] items-center justify-center overflow-hidden bg-ink"
     >
- {/* HERO BACKGROUND: photo goes in public/images/hero.jpg */}
+
 <div className="absolute inset-0 -z-20">
   <div
     aria-hidden
@@ -42,11 +42,10 @@ useEffect(() => {
         className="absolute inset-0 -z-10  motion-reduce:animate-none"
       >
         <span className="absolute bottom-24 left-4 font-mono text-[11px] uppercase tracking-widest text-neutral-300 sm:left-6">
-          Hero background · drop image here · 1920×1080+
         </span>
       </div>
 
-      {/* Dark overlay: even tint for text contrast, fading into the next section */}
+
       <div
         aria-hidden
         className="absolute inset-0 -z-10 bg-gradient-to-b from-black/70 via-black/50 to-ink"
