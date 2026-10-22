@@ -30,6 +30,8 @@ export interface CreateMenuItemInput {
   image_url?: string | null;
   /** Defaults to `true` when omitted. */
   is_available?: boolean;
+  /** Defaults to `false`. Menu items are archived (and restored) with this flag, never deleted. */
+  is_archived?: boolean;
 }
 
 /** PUT | PATCH /api/menu/[id] — partial update; at least one field is required. */

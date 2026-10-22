@@ -1,7 +1,7 @@
 /** Explicit column lists, so a future column never leaks into responses by accident. */
 export const PROFILE_COLUMNS = "id, email, full_name, role, is_active, updated_at";
 export const MENU_ITEM_COLUMNS =
-  "id, name, description, category, price, image_url, is_available, created_at, updated_at";
+  "id, name, description, category, price, image_url, is_available, is_archived, created_at, updated_at";
 export const TABLE_COLUMNS = "id, table_number, capacity, location, status, created_at, updated_at";
 export const INGREDIENT_COLUMNS = "id, name, unit, minimum_threshold, shelf_life_days, created_at";
 export const BATCH_COLUMNS =

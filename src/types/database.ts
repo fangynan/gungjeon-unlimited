@@ -36,6 +36,8 @@ export interface MenuItem {
   price: number;
   image_url: string | null;
   is_available: boolean;
+  /** Archived items are retired: hidden from the public site, still listed (under Archived) for admins. */
+  is_archived: boolean;
   created_at: string; // ISO 8601
   updated_at: string; // ISO 8601
 }

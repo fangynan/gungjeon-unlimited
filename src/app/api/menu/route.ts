@@ -9,15 +9,20 @@ import type { CreateMenuItemInput, MenuItem } from "@/types";
 export const dynamic = "force-dynamic";
 
 /**
- * GET /api/menu[?category=Pork]   — PUBLIC (no credentials needed; RLS allows anon SELECT)
- * Returns every item, including unavailable ones, so the UI can show availability.
+ * GET /api/menu[?category=Pork][&include_archived=true]   — PUBLIC (no credentials needed)
+ * Returns every non-archived item, including unavailable ones, so the UI can show availability.
  * `category` is a case-insensitive exact match.
+ * `include_archived=true` also returns archived items — ADMIN only (401/403 otherwise), used by
+ * Menu Management. Everyone else, signed in or not, never receives archived items.
  */
 export const GET = withApi(async (req: Request) => {
-  const category = new URL(req.url).searchParams.get("category")?.trim();
+  const params = new URL(req.url).searchParams;
+  const category = params.get("category")?.trim();
+  const includeArchived = params.get("include_archived") === "true";
 
-  const supabase = await createClient();
+  const supabase = includeArchived ? (await requireRole(["admin"])).supabase : await createClient();
   let query = supabase.from("menu_items").select(MENU_ITEM_COLUMNS).order("category").order("name");
+  if (!includeArchived) query = query.eq("is_archived", false);
   if (category) query = query.ilike("category", escapeLike(category));
 
   const { data, error } = await query;

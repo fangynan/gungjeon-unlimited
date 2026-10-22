@@ -91,6 +91,7 @@ export const createMenuItemSchema = z.object({
     .nullable()
     .optional(),
   is_available: z.boolean().optional(),
+  is_archived: z.boolean().optional(),
 });
 
 export const updateMenuItemSchema = createMenuItemSchema.partial().refine(atLeastOneField, AT_LEAST_ONE);
