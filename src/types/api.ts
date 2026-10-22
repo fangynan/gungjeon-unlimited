@@ -60,18 +60,22 @@ export interface UpdateTableStatusInput {
 export interface CreateIngredientInput {
   name: string;
   unit: string;
+  /** Whole days a batch stays usable after it is received (1-3650). */
+  shelf_life_days: number;
   /** Defaults to 0 when omitted. */
   minimum_threshold?: number;
 }
 
-/** POST /api/inventory/batches (admin or staff). New batches start `active`. */
+/**
+ * POST /api/inventory/batches (admin or staff). New batches start `active`.
+ * There is no expiration date to send: the database sets it from the date received
+ * (today) plus the ingredient's shelf life.
+ */
 export interface CreateBatchInput {
   ingredient_id: string;
   batch_number: string;
   /** Must be > 0. */
   quantity: number;
-  /** `YYYY-MM-DD`, today or later. */
-  expiration_date: string;
 }
 
 /** PATCH /api/inventory/ingredients/[id] (admin). Send only the fields you want to change. */
@@ -79,16 +83,19 @@ export interface UpdateIngredientInput {
   name?: string;
   /** Low-stock warning level; 0 turns the warning off. */
   minimum_threshold?: number;
+  /** Whole days (1-3650). Only affects batches added after the change. */
+  shelf_life_days?: number;
 }
 
 /** PATCH /api/inventory/batches/[id] (admin). Send only the fields you want to change. */
 export interface UpdateBatchInput {
   /** New total quantity (>= 0). Setting 0 marks the batch depleted. */
   quantity?: number;
-  /** `YYYY-MM-DD`, not in the future, not after the expiration date. */
+  /**
+   * `YYYY-MM-DD`, not in the future. The expiration date moves with it
+   * (received date + shelf life); a resulting past date marks the batch expired.
+   */
   received_date?: string;
-  /** `YYYY-MM-DD`. A past date marks the batch expired. */
-  expiration_date?: string;
 }
 
 /** PATCH /api/inventory/batches/[id]/deduct (admin or staff) */

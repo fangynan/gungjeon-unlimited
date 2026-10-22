@@ -68,6 +68,11 @@ export interface Ingredient {
   unit: string;
   /** Stock below this is flagged as low. 0 disables the flag. */
   minimum_threshold: number;
+  /**
+   * Standard shelf life in days, counted from a batch's received date.
+   * `null` = not set yet (batches cannot be added until an admin sets it).
+   */
+  shelf_life_days: number | null;
   created_at: string; // ISO 8601
 }
 
@@ -85,7 +90,10 @@ export interface InventoryBatch {
   ingredient_id: string;
   batch_number: string;
   quantity: number;
-  /** Calendar date, `YYYY-MM-DD`. The batch is usable through this day and expired after it. */
+  /**
+   * Calendar date, `YYYY-MM-DD`. The batch is usable through this day and expired after it.
+   * Calculated by the database: `received_date` + the ingredient's `shelf_life_days`.
+   */
   expiration_date: string;
   /** Calendar date the batch was received, `YYYY-MM-DD` (restaurant time). */
   received_date: string;
@@ -95,7 +103,7 @@ export interface InventoryBatch {
 
 /** GET /api/inventory/fefo row: a batch joined with its ingredient, in FEFO order. */
 export interface FefoBatch extends InventoryBatch {
-  ingredient: Pick<Ingredient, "id" | "name" | "unit">;
+  ingredient: Pick<Ingredient, "id" | "name" | "unit" | "shelf_life_days">;
   /** Whole days from today (restaurant time) to `expiration_date`; negative once expired. */
   days_until_expiry: number;
   /** True on the one active batch per ingredient that should be used next. */

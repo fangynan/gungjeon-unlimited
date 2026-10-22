@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { restaurantToday } from "@/lib/api/dates";
+import { addDays, restaurantToday } from "@/lib/api/dates";
+import { formatDate } from "@/lib/inventory-status";
 import type { FefoBatch } from "@/types";
 
 export interface EditBatchValues {
   name: string;
   quantity: number;
   received_date: string; // YYYY-MM-DD
-  expiration_date: string; // YYYY-MM-DD
 }
 
 interface Props {
@@ -22,11 +22,18 @@ export default function EditBatchDialog({ batch, onClose, onSubmit }: Props) {
   const [name, setName] = useState(batch.ingredient.name);
   const [quantity, setQuantity] = useState(String(batch.quantity));
   const [received, setReceived] = useState(batch.received_date);
-  const [expiration, setExpiration] = useState(batch.expiration_date);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const unit = batch.ingredient.unit;
+  const shelfLife = batch.ingredient.shelf_life_days ?? null; // undefined (field missing) counts as not set
+
+  // The expiration date is not typed in: it is the date received + the ingredient's shelf life.
+  // The regex guards against a half-typed date while the field is being edited.
+  const expiration =
+    shelfLife !== null && /^\d{4}-\d{2}-\d{2}$/.test(received)
+      ? addDays(received, shelfLife)
+      : batch.expiration_date;
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -55,7 +62,6 @@ export default function EditBatchDialog({ batch, onClose, onSubmit }: Props) {
       name: name.trim(),
       quantity: qty,
       received_date: received,
-      expiration_date: expiration,
     });
     setSaving(false);
 
@@ -123,18 +129,15 @@ export default function EditBatchDialog({ batch, onClose, onSubmit }: Props) {
         </div>
 
         <div className="space-y-1">
-          <label htmlFor="edit_expiration" className="text-sm font-medium text-neutral-700">
-            Expiration date
-          </label>
-          <input
-            id="edit_expiration"
-            type="date"
-            required
-            value={expiration}
-            onChange={(e) => setExpiration(e.target.value)}
-            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900"
-          />
-          <p className="text-xs text-neutral-600">A past date marks the batch as Expired.</p>
+          <p className="text-sm font-medium text-neutral-700">Expiration date</p>
+          <p className="rounded-md bg-neutral-50 px-3 py-2 text-neutral-900">
+            {formatDate(expiration)}
+          </p>
+          <p className="text-xs text-neutral-600">
+            {shelfLife !== null
+              ? `Calculated: date received + ${shelfLife}-day shelf life. A past date marks the batch as Expired.`
+              : "This ingredient has no shelf life set, so the expiration date stays as it is."}
+          </p>
         </div>
 
         {error && <p className="text-sm text-red-600">{error}</p>}

@@ -9,16 +9,28 @@ import AddInventoryDialog, {
 } from "@/components/admin/AddInventoryDialog";
 import DeductDialog from "@/components/admin/DeductDialog";
 import EditBatchDialog, { type EditBatchValues } from "@/components/admin/EditBatchDialog";
+import EditIngredientDialog, {
+  type IngredientSettingsValues,
+} from "@/components/admin/EditIngredientDialog";
 import InventoryActivityLog from "@/components/admin/InventoryActivityLog";
+import StockLevels from "@/components/admin/StockLevels";
 import type {
   FefoBatch,
   Ingredient,
   IngredientWithStock,
   InventoryBatch,
   InventoryLog,
+  UpdateIngredientInput,
   UserProfile,
 } from "@/types";
-import { BADGE, STATUS_OPTIONS, formatDate, getStatus, type DisplayStatus } from "@/lib/inventory-status";
+import {
+  BADGE,
+  STATUS_OPTIONS,
+  formatDate,
+  getStatus,
+  getStockLevel,
+  type DisplayStatus,
+} from "@/lib/inventory-status";
 
 
 
@@ -33,6 +45,7 @@ export default function InventoryPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [deducting, setDeducting] = useState<FefoBatch | null>(null);
   const [editing, setEditing] = useState<FefoBatch | null>(null);
+  const [editingIngredient, setEditingIngredient] = useState<IngredientWithStock | null>(null);
   const [logs, setLogs] = useState<InventoryLog[]>([]);
   const [logError, setLogError] = useState<string | null>(null);
 
@@ -161,12 +174,10 @@ export default function InventoryPage() {
     if (!editing) return "No batch selected.";
 
     // Only send what actually changed.
-    const batchChanges: { quantity?: number; received_date?: string; expiration_date?: string } = {};
+    // (The expiration date is not sent: the database recalculates it from the received date.)
+    const batchChanges: { quantity?: number; received_date?: string } = {};
     if (values.quantity !== editing.quantity) batchChanges.quantity = values.quantity;
     if (values.received_date !== editing.received_date) batchChanges.received_date = values.received_date;
-    if (values.expiration_date !== editing.expiration_date) {
-      batchChanges.expiration_date = values.expiration_date;
-    }
     const nameChanged = values.name !== editing.ingredient.name;
 
     if (Object.keys(batchChanges).length > 0) {
@@ -192,19 +203,60 @@ export default function InventoryPage() {
     return null;
   }
 
-  const lowStockIds = useMemo(
-    () => new Set(ingredients.filter((i) => i.is_low_stock).map((i) => i.id)),
+  async function saveIngredient(values: IngredientSettingsValues): Promise<string | null> {
+    if (!editingIngredient) return "No ingredient selected.";
+
+    // Only send what actually changed.
+    const changes: UpdateIngredientInput = {};
+    if (values.shelf_life_days !== editingIngredient.shelf_life_days) {
+      changes.shelf_life_days = values.shelf_life_days;
+    }
+    if (values.minimum_threshold !== Number(editingIngredient.minimum_threshold)) {
+      changes.minimum_threshold = values.minimum_threshold;
+    }
+
+    if (Object.keys(changes).length > 0) {
+      const res = await apiFetch<Ingredient>(`/api/inventory/ingredients/${editingIngredient.id}`, {
+        method: "PATCH",
+        json: changes,
+      });
+      if (!res.success) return res.error ?? "Could not update the ingredient.";
+    }
+
+    await load();
+    return null;
+  }
+
+  // Low Stock = some left but below the level. Out of Stock (0 left) is a separate state.
+  const lowStockIngredients = useMemo(
+    () => ingredients.filter((i) => getStockLevel(i) === "Low Stock"),
     [ingredients]
   );
+  const outOfStockIngredients = useMemo(
+    () => ingredients.filter((i) => getStockLevel(i) === "Out of Stock"),
+    [ingredients]
+  );
+  const lowStockIds = useMemo(
+    () => new Set(lowStockIngredients.map((i) => i.id)),
+    [lowStockIngredients]
+  );
+  // True when no ingredient has a low-stock level yet (0 turns the warning off).
+  const noLevelsSet =
+    ingredients.length > 0 && !ingredients.some((i) => Number(i.minimum_threshold) > 0);
 
   const rows = useMemo(() => {
     const term = search.trim().toLowerCase();
     return batches
       .map((batch) => ({ batch, status: getStatus(batch, lowStockIds) }))
       .filter(({ batch, status }) => {
-        // Depleted batches are hidden unless the filter asks for them.
         if (statusFilter === "all") {
+          // Depleted batches are hidden unless the filter asks for them.
           if (status === "Depleted") return false;
+        } else if (statusFilter === "Low Stock") {
+          // Low stock belongs to the ingredient, not to one batch. List every usable batch of a
+          // low-stock ingredient, even one whose own status is Near Expiry.
+          if (status === "Expired" || status === "Depleted") return false;
+          if (!lowStockIds.has(batch.ingredient_id)) return false;
         } else if (status !== statusFilter) {
           return false;
         }
@@ -228,6 +280,28 @@ export default function InventoryPage() {
           + Add Inventory
         </button>
       </div>
+
+      {!loading && outOfStockIngredients.length > 0 && (
+        <div className="rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+          <span className="font-semibold">Out of stock:</span>{" "}
+          {outOfStockIngredients.map((i) => i.name).join(", ")}.
+        </div>
+      )}
+      {!loading && lowStockIngredients.length > 0 && (
+        <div className="rounded-lg border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-900">
+          <span className="font-semibold">Low on stock:</span>{" "}
+          {lowStockIngredients
+            .map((i) => `${i.name} (${Number(i.total_stock)} ${i.unit} left)`)
+            .join(", ")}
+          .
+        </div>
+      )}
+      {!loading && noLevelsSet && (
+        <p className="rounded-lg border border-neutral-300 bg-neutral-50 p-3 text-sm text-neutral-700">
+          No low-stock levels are set yet, so nothing can be flagged as Low Stock.{" "}
+          {isAdmin ? "Use Edit under Stock Levels to set one." : "Ask an admin to set them."}
+        </p>
+      )}
 
       <div className="flex flex-wrap items-center gap-3">
         <input
@@ -287,6 +361,11 @@ export default function InventoryPage() {
                   >
                     <td className="p-3 font-medium text-neutral-900">
                       {batch.ingredient.name}
+                      {status === "Near Expiry" && lowStockIds.has(batch.ingredient_id) && (
+                        <span className="ml-2 rounded bg-yellow-100 px-2 py-0.5 text-xs font-semibold text-yellow-800">
+                          Low stock
+                        </span>
+                      )}
                       {batch.use_first && (
                         <span className="ml-2 rounded bg-red-700 px-2 py-0.5 text-xs font-semibold text-white">
                           Use first
@@ -343,6 +422,10 @@ export default function InventoryPage() {
         </div>
       )}
 
+      {!loading && (
+        <StockLevels ingredients={ingredients} isAdmin={isAdmin} onEdit={setEditingIngredient} />
+      )}
+
             {!loading && <InventoryActivityLog logs={logs} error={logError} />}
 
       {showAdd && (
@@ -366,6 +449,13 @@ export default function InventoryPage() {
           batch={editing}
           onClose={() => setEditing(null)}
           onSubmit={editBatch}
+        />
+      )}
+      {editingIngredient && (
+        <EditIngredientDialog
+          ingredient={editingIngredient}
+          onClose={() => setEditingIngredient(null)}
+          onSubmit={saveIngredient}
         />
       )}
     </main>

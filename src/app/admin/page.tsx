@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api/client";
-import { BADGE, formatDate, getStatus } from "@/lib/inventory-status";
+import { BADGE, formatDate, getStatus, getStockLevel } from "@/lib/inventory-status";
 import type {
   FefoBatch,
   IngredientWithStock,
@@ -106,14 +106,20 @@ export default function DashboardPage() {
   const counts = useMemo(() => {
     const statuses = batches.map((batch) => getStatus(batch, NO_LOW_STOCK));
     return {
-      total: statuses.filter((s) => s !== "Depleted" && s !== "Expired").length,
       nearExpiry: statuses.filter((s) => s === "Near Expiry").length,
       expired: statuses.filter((s) => s === "Expired").length,
     };
   }, [batches]);
 
+  // Stock is worked out per ingredient (all its usable batches added up), not per batch.
+  // Low Stock = some left but below the level. Out of Stock (0 left) is counted separately.
   const lowStockIds = useMemo(
-    () => new Set(ingredients.filter((i) => i.is_low_stock).map((i) => i.id)),
+    () => new Set(ingredients.filter((i) => getStockLevel(i) === "Low Stock").map((i) => i.id)),
+    [ingredients]
+  );
+  const lowStockCount = lowStockIds.size;
+  const outOfStockCount = useMemo(
+    () => ingredients.filter((i) => getStockLevel(i) === "Out of Stock").length,
     [ingredients]
   );
 
@@ -159,12 +165,21 @@ export default function DashboardPage() {
         <p className="text-neutral-600">Loading...</p>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatCard label="Total Items" value={String(counts.total)} />
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
             <StatCard
               label="Near Expiry"
               value={String(counts.nearExpiry)}
               valueClass="text-orange-700"
+            />
+            <StatCard
+              label="Low Stock"
+              value={String(lowStockCount)}
+              valueClass="text-yellow-700"
+            />
+            <StatCard
+              label="Out of Stock"
+              value={String(outOfStockCount)}
+              valueClass="text-red-700"
             />
             <StatCard
               label="Expired Items"

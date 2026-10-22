@@ -129,9 +129,17 @@ const isoDate = z
 
 const MAX_QUANTITY = 999_999_999;
 
+/** Whole days, 1 to 10 years. */
+const shelfLifeDays = z
+  .number()
+  .int("shelf_life_days must be a whole number of days")
+  .min(1, "shelf_life_days must be at least 1")
+  .max(3650, "shelf_life_days must be 3650 or less");
+
 export const createIngredientSchema = z.object({
   name: z.string().trim().min(1, "name is required").max(120),
   unit: z.string().trim().min(1, "unit is required").max(30),
+  shelf_life_days: shelfLifeDays,
   minimum_threshold: z.number().min(0, "minimum_threshold must be >= 0").max(MAX_QUANTITY).optional(),
 });
 
@@ -139,6 +147,7 @@ export const updateIngredientSchema = z
   .object({
     name: z.string().trim().min(1, "name is required").max(120),
     minimum_threshold: z.number().min(0, "minimum_threshold must be >= 0").max(MAX_QUANTITY),
+    shelf_life_days: shelfLifeDays,
   })
   .partial()
   .refine(atLeastOneField, AT_LEAST_ONE);
@@ -147,7 +156,6 @@ export const createBatchSchema = z.object({
   ingredient_id: uuidField,
   batch_number: z.string().trim().min(1, "batch_number is required").max(60),
   quantity: z.number().gt(0, "quantity must be greater than 0").max(MAX_QUANTITY),
-  expiration_date: isoDate,
 });
 
 export const deductBatchSchema = z.object({
@@ -158,7 +166,6 @@ export const updateBatchSchema = z
   .object({
     quantity: z.number().min(0, "quantity must be >= 0").max(MAX_QUANTITY),
     received_date: isoDate,
-    expiration_date: isoDate,
   })
   .partial()
   .refine(atLeastOneField, AT_LEAST_ONE);

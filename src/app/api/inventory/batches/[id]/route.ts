@@ -1,6 +1,6 @@
 import { requireRole } from "@/lib/api/auth";
 import { BATCH_COLUMNS, cast } from "@/lib/api/db";
-import { restaurantToday } from "@/lib/api/dates";
+import { addDays, restaurantToday } from "@/lib/api/dates";
 import { ApiError, mapSupabaseError } from "@/lib/api/errors";
 import { ok, withApi } from "@/lib/api/response";
 import { parseBody, parseId, updateBatchSchema } from "@/lib/api/validation";
@@ -12,8 +12,9 @@ type Ctx = { params: Promise<{ id: string }> };
 
 /**
  * PATCH /api/inventory/batches/[id] — ADMIN. Body: UpdateBatchInput (partial).
- * Corrects a batch's quantity, received date or expiration date. The status is recalculated:
- * quantity 0 -> depleted, expiration in the past -> expired, otherwise active.
+ * Corrects a batch's quantity or received date. The expiration date is not editable: it follows the
+ * received date (received date + the ingredient's shelf life, calculated by the database).
+ * The status is recalculated: quantity 0 -> depleted, expiration in the past -> expired, otherwise active.
  */
 export const PATCH = withApi(async (req: Request, { params }: Ctx) => {
   const { supabase } = await requireRole(["admin"]);
@@ -31,8 +32,21 @@ export const PATCH = withApi(async (req: Request, { params }: Ctx) => {
 
   const quantity = input.quantity ?? batch.quantity;
   const received = input.received_date ?? batch.received_date;
-  const expiration = input.expiration_date ?? batch.expiration_date;
   const today = restaurantToday();
+
+  // Work out the expiration the database is about to set, so the status below is right.
+  // (Same sum as set_batch_expiration(); without a shelf life the date is left as it is.)
+  let expiration = batch.expiration_date;
+  if (received !== batch.received_date) {
+    const { data: ingredient, error: ingredientError } = await supabase
+      .from("ingredients")
+      .select("shelf_life_days")
+      .eq("id", batch.ingredient_id)
+      .maybeSingle();
+    if (ingredientError) throw mapSupabaseError(ingredientError);
+    const days = cast<{ shelf_life_days: number | null } | null>(ingredient)?.shelf_life_days;
+    if (typeof days === "number") expiration = addDays(received, days);
+  }
 
   if (received > today) {
     throw new ApiError(400, "Validation failed: received_date: cannot be in the future.");
