@@ -17,6 +17,7 @@ const NAV = [
   { label: "About", href: "/about" },
   { label: "Menu", href: "/menu" },
   { label: "Table Availability", href: "/table-availability" },
+  { label: "Pencil Booking", href: "/pencil-booking" },
   { label: "Contact", href: "/contact" },
 ];
 

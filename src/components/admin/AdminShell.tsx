@@ -12,6 +12,7 @@ const OPERATION = [
   { label: "Inventory", href: "/admin/inventory" },
   { label: "Table Management", href: "/admin/tables" },
   { label: "Side Dishes", href: "/admin/side-dishes" },
+  { label: "Bookings", href: "/admin/bookings" },
 ];
 
 const ADMINISTRATION = [

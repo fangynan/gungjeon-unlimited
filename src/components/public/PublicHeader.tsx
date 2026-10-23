@@ -14,6 +14,7 @@ const LINKS = [
   { label: "Home", href: "/" },
   { label: "About", href: "/about" },
   { label: "Menu", href: "/menu" },
+  { label: "Pencil Booking", href: "/pencil-booking" },
   { label: "Contact", href: "/contact" },
 ];
 
@@ -113,7 +114,7 @@ export default function PublicHeader() {
             className={`group flex min-w-0 items-center gap-3 transition-transform duration-100 ${SNAP} active:scale-95`}
           >
             <BrandLogo className="size-10" sizes="40px" priority />
-            <span className="hidden truncate font-serif-display text-lg tracking-[0.03em] text-paper transition-colors duration-100 group-hover:text-gold min-[400px]:inline">
+            <span className="hidden truncate font-serif-display text-lg tracking-[0.03em] text-paper transition-colors duration-100 group-hover:text-gold min-[400px]:inline md:max-lg:hidden">
               {RESTAURANT.name}
             </span>
           </Link>

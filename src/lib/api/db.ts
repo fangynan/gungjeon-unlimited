@@ -13,3 +13,5 @@ export const LOG_COLUMNS =
 export function cast<T>(value: unknown): T {
   return value as T;
 }
+export const PENCIL_BOOKING_COLUMNS =
+  "id, guest_name, guest_email, guest_phone, party_size, booking_date, booking_time, status, special_requests, staff_notes, handled_by, created_at, updated_at";

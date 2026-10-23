@@ -19,6 +19,8 @@ import { Clock, MapPin, Phone, Plus, type LucideIcon } from "lucide-react";
 import { RESTAURANT } from "@/lib/restaurant-info";
 import { serif } from "@/lib/fonts";
 import { fadeUp, stagger } from "@/components/home/motion-presets";
+import { BOOKING_RULES } from "@/lib/validations/booking";
+import { formatBookingTime } from "@/lib/booking-format";
 
 /* ───────────────────────── Data (single source of truth) ───────────────────────── */
 
@@ -32,6 +34,8 @@ const MAPS_EMBED_URL = `https://maps.google.com/maps?q=${encodeURIComponent(FULL
 
 // Typographic en dash instead of the hyphen stored in restaurant-info.
 const HOURS_LABEL = RESTAURANT.hours.replace(" - ", " \u2013 ");
+
+const SEATING_HOURS = `${formatBookingTime(BOOKING_RULES.firstSlot)} to ${formatBookingTime(BOOKING_RULES.lastSlot)}`;
 
 // Lets a long email break neatly at the @ instead of mid-word on narrow columns.
 const [EMAIL_USER, EMAIL_DOMAIN] = RESTAURANT.email.split("@");
@@ -185,12 +189,34 @@ const FAQS: readonly FaqItem[] = [
     question: "Do you accept online table reservations?",
     answer: (
       <>
-        Dining with us is walk-in based, so there is no need to book a table. Before you
-        head over, open the{" "}
+        We do not take fixed table reservations, and walk-ins are always welcome. If you
+        would like to skip the wait, you can pencil in a{" "}
+        <Link href="/pencil-booking" className={INLINE_LINK}>
+          Pencil Booking
+        </Link>{" "}
+        online. You can also open the{" "}
         <Link href="/table-availability" className={INLINE_LINK}>
           Table Availability
         </Link>{" "}
         page to see which tables are free right now, in real time.
+      </>
+    ),
+  },
+  {
+    id: "pencil-booking",
+    question: "How does a Pencil Booking work?",
+    answer: (
+      <>
+        Send your details on the{" "}
+        <Link href="/pencil-booking" className={INLINE_LINK}>
+          Pencil Booking
+        </Link>{" "}
+        page for any half-hour slot from {SEATING_HOURS}, at least {BOOKING_RULES.minLeadMinutes}{" "}
+        minutes ahead and up to {BOOKING_RULES.maxAdvanceDays} days in advance. We do not
+        send a reply or confirmation, and we do not assign a table in advance: we seat you
+        at an available table when you arrive. If you do not arrive within{" "}
+        {BOOKING_RULES.graceMinutes} minutes of your booking time, the pencil booking is
+        automatically invalid.
       </>
     ),
   },
@@ -271,12 +297,15 @@ function ArrivalGuide() {
           Walk-ins are <span className="text-gold">always welcome.</span>
         </h3>
         <p className="mt-4 max-w-md text-pretty leading-8 text-paper/75">
-          No reservation is needed. Check which tables are free before you leave home, then
-          come straight to the grill.
+          No reservation is needed. Check which tables are free before you leave home, or
+          pencil in a booking if you would rather skip the wait.
         </p>
-        <div className="mt-6">
+        <div className="mt-6 flex flex-wrap items-center gap-x-8 gap-y-4">
           <Link href="/table-availability" className={TEXT_LINK}>
             Check Table Availability
+          </Link>
+          <Link href="/pencil-booking" className={TEXT_LINK}>
+            Pencil Booking
           </Link>
         </div>
       </div>
